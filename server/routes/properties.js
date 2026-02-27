@@ -81,6 +81,24 @@ router.delete(
     const ownerId = req.user.id;
     const { id } = req.params;
 
+    const { data: existingProperty, error: existingPropertyError } = await supabase
+      .from('properties')
+      .select('id')
+      .eq('id', id)
+      .eq('owner_id', ownerId)
+      .maybeSingle();
+
+    if (existingPropertyError) {
+      throw mapSupabaseError(
+        existingPropertyError,
+        existingPropertyError.status === 406 ? 404 : existingPropertyError.status,
+      );
+    }
+
+    if (!existingProperty) {
+      throw createHttpError(404, 'Not found');
+    }
+
     const { error } = await supabase
       .from('properties')
       .delete()

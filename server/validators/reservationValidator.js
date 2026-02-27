@@ -48,8 +48,8 @@ export const validateReservationPayload = (payload) => {
     throw createHttpError(400, 'Invalid reservation dates.');
   }
 
-  if (endDate < startDate) {
-    throw createHttpError(400, 'End date cannot be earlier than the start date.');
+  if (endDate <= startDate) {
+    throw createHttpError(400, 'End date must be after the start date.');
   }
 
   const normalizeString = (value) => {

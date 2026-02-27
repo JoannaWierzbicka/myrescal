@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { logoutUser } from '../api/auth.js';
+import { fetchCurrentUser, logoutUser } from '../api/auth.js';
 import { AUTH_EVENTS } from '../api/client.js';
 import { authStorage } from './authStorage.js';
 
@@ -16,11 +16,13 @@ export function AuthProvider({ children }) {
     session: authStorage.getSession(),
   }));
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
     const handleUnauthorized = () => {
       authStorage.clear();
       setAuthState(initialState);
+      setAuthChecked(true);
     };
 
     if (typeof window !== 'undefined') {
@@ -32,6 +34,41 @@ export function AuthProvider({ children }) {
         window.removeEventListener(AUTH_EVENTS.UNAUTHORIZED, handleUnauthorized);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const storedSession = authStorage.getSession();
+    const accessToken = storedSession?.access_token;
+
+    if (!accessToken) {
+      authStorage.clear();
+      setAuthState(initialState);
+      setAuthChecked(true);
+      return () => controller.abort();
+    }
+
+    fetchCurrentUser({ signal: controller.signal })
+      .then((response) => {
+        if (!response?.user) {
+          throw new Error('Unable to verify session.');
+        }
+
+        setAuthState({
+          user: response.user,
+          session: storedSession,
+        });
+      })
+      .catch((error) => {
+        if (error?.name === 'AbortError') return;
+        authStorage.clear();
+        setAuthState(initialState);
+      })
+      .finally(() => {
+        setAuthChecked(true);
+      });
+
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -53,6 +90,7 @@ export function AuthProvider({ children }) {
       user: normalizedUser,
       session: normalizedSession,
     });
+    setAuthChecked(true);
   }, []);
 
   const logout = useCallback(async () => {
@@ -68,6 +106,7 @@ export function AuthProvider({ children }) {
     } finally {
       authStorage.clear();
       setAuthState(initialState);
+      setAuthChecked(true);
       setIsLoggingOut(false);
     }
   }, [isLoggingOut, session]);
@@ -79,9 +118,10 @@ export function AuthProvider({ children }) {
       login,
       logout,
       isLoggingOut,
+      authChecked,
       isAuthenticated: Boolean(user),
     }),
-    [user, session, isLoggingOut, login, logout],
+    [user, session, isLoggingOut, login, logout, authChecked],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

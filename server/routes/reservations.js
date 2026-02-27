@@ -52,7 +52,7 @@ router.get(
       throw mapSupabaseError(error);
     }
 
-    const normalized = await applyAutomaticPastStatus(data, ownerId);
+    const normalized = withComputedReservationStatus(data);
 
     res.json(normalized);
   }),
@@ -90,7 +90,7 @@ router.get(
       throw createHttpError(404, `Reservation with ID ${id} not found.`);
     }
 
-    const [normalized] = await applyAutomaticPastStatus([data], ownerId);
+    const [normalized] = withComputedReservationStatus([data]);
 
     res.json(normalized);
   }),
@@ -154,8 +154,6 @@ router.put(
     const ownerId = req.user.id;
     const reservation = validateReservationPayload(req.body);
 
-    await ensureOwnership(ownerId, reservation.property_id, reservation.room_id);
-
     const { property, room } = await ensureOwnership(ownerId, reservation.property_id, reservation.room_id);
 
     await ensureRoomAvailability({
@@ -212,6 +210,24 @@ router.delete(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     const ownerId = req.user.id;
+
+    const { data: existingReservation, error: existingReservationError } = await supabase
+      .from('reservations')
+      .select('id')
+      .eq('id', id)
+      .eq('owner_id', ownerId)
+      .maybeSingle();
+
+    if (existingReservationError) {
+      throw mapSupabaseError(
+        existingReservationError,
+        existingReservationError.status === 406 ? 404 : existingReservationError.status,
+      );
+    }
+
+    if (!existingReservation) {
+      throw createHttpError(404, 'Not found');
+    }
 
     const { error } = await supabase
       .from('reservations')
@@ -311,39 +327,27 @@ async function ensureRoomAvailability({ ownerId, roomId, startDate, endDate, exc
   }
 }
 
-async function applyAutomaticPastStatus(reservations, ownerId) {
+function withComputedReservationStatus(reservations) {
   if (!Array.isArray(reservations) || reservations.length === 0) {
     return reservations;
   }
 
   const now = new Date();
-  const idsToUpdate = [];
-
-  const normalized = reservations.map((reservation) => {
-    if (!reservation || !reservation.id || reservation.status === 'past') {
+  return reservations.map((reservation) => {
+    if (!reservation) {
       return reservation;
     }
 
     const endDate = reservation.end_date ? new Date(reservation.end_date) : null;
-    if (endDate && !Number.isNaN(endDate.getTime()) && endDate < now) {
-      idsToUpdate.push(reservation.id);
-      return { ...reservation, status: 'past' };
-    }
+    const isPastByDate = Boolean(
+      endDate && !Number.isNaN(endDate.getTime()) && endDate < now,
+    );
+    const computedStatus = isPastByDate ? 'past' : reservation.status;
 
-    return reservation;
+    return {
+      ...reservation,
+      computedStatus,
+      isPast: computedStatus === 'past',
+    };
   });
-
-  if (idsToUpdate.length > 0) {
-    const { error } = await supabase
-      .from('reservations')
-      .update({ status: 'past' })
-      .in('id', idsToUpdate)
-      .eq('owner_id', ownerId);
-
-    if (error) {
-      console.error('Failed to update reservations to past status', error);
-    }
-  }
-
-  return normalized;
 }
