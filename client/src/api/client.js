@@ -11,7 +11,9 @@ const normalizeBaseUrl = (url) => {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 };
 
-const API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
+const API_BASE_URL = normalizeBaseUrl(
+  import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL,
+);
 
 const buildUrl = (path) => {
   if (!path) throw new Error('apiClient requires a path');

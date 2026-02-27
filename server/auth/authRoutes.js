@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { supabase } from './supabaseClient.js';
+import { requireAuth } from './requireAuth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { createHttpError } from '../utils/httpError.js';
 
@@ -65,6 +66,24 @@ router.post(
     }
 
     res.json({ message: 'Logged out' });
+  }),
+);
+
+router.get(
+  '/me',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const user = req.user;
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email ?? null,
+        phone: user.phone ?? null,
+        role: user.role ?? null,
+        aud: user.aud ?? null,
+      },
+    });
   }),
 );
 

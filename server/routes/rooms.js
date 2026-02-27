@@ -121,6 +121,24 @@ router.delete(
     const ownerId = req.user.id;
     const { id } = req.params;
 
+    const { data: existingRoom, error: existingRoomError } = await supabase
+      .from('rooms')
+      .select('id')
+      .eq('id', id)
+      .eq('owner_id', ownerId)
+      .maybeSingle();
+
+    if (existingRoomError) {
+      throw mapSupabaseError(
+        existingRoomError,
+        existingRoomError.status === 406 ? 404 : existingRoomError.status,
+      );
+    }
+
+    if (!existingRoom) {
+      throw createHttpError(404, 'Not found');
+    }
+
     const { error } = await supabase
       .from('rooms')
       .delete()

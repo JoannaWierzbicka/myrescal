@@ -16,13 +16,19 @@ During development the client proxies `"/api"` to the Node server (default `http
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `VITE_API_BASE_URL` | `/api` | Custom API origin (useful when the API is hosted elsewhere or when running in production). |
+| `VITE_API_URL` | `/api` | Preferred API origin variable for dev/prod deployments. |
+| `VITE_API_BASE_URL` | `/api` | Legacy fallback (kept for backwards compatibility). |
 
 Create a `.env` file inside `client/` if you need to override the default proxy path:
 
 ```
-VITE_API_BASE_URL=https://your-production-api.example.com
+VITE_API_URL=https://your-production-api.example.com
 ```
+
+### Dev vs Prod
+
+- Dev (with Vite proxy): usually no frontend env is required, default `/api` works with `vite.config.js` proxy.
+- Prod: set `VITE_API_URL` to the public backend URL (for example `https://api.example.com`).
 
 ## Available Scripts
 

@@ -26,6 +26,10 @@ export async function registerUser({ email, password, signal } = {}) {
   });
 }
 
+export async function fetchCurrentUser({ signal } = {}) {
+  return apiClient(`${AUTH_ROOT}/me`, { signal });
+}
+
 export async function logoutUser({ signal, token } = {}) {
   return apiClient(`${AUTH_ROOT}/logout`, {
     method: 'POST',
