@@ -19,21 +19,13 @@ dotenv.config();
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
-const DEFAULT_DEV_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+const allowedOrigins = process.env.CORS_ORIGIN?.split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean) || [];
 
-const parseAllowedOrigins = (value) =>
-  String(value || '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-
-const configuredOrigins = parseAllowedOrigins(process.env.CORS_ORIGIN || process.env.CLIENT_ORIGIN);
-const allowedOrigins = Array.from(
-  new Set([
-    ...configuredOrigins,
-    ...(process.env.NODE_ENV !== 'production' ? DEFAULT_DEV_ORIGINS : []),
-  ]),
-);
+if (process.env.NODE_ENV !== 'production') {
+  console.log('CORS allowed origins:', allowedOrigins);
+}
 
 const corsOptions = {
   origin(origin, callback) {
@@ -42,7 +34,12 @@ const corsOptions = {
       return;
     }
 
-    callback(null, allowedOrigins.includes(origin));
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: false,
 };
@@ -79,6 +76,7 @@ app.use(
 app.use(
   cors(corsOptions),
 );
+app.options("*", cors(corsOptions));
 app.use(express.json());
 
 app.get('/health', (_req, res) => res.status(200).json({ ok: true }));
