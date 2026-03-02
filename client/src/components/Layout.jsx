@@ -1,20 +1,42 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './Navbar.jsx';
 import {
   Alert,
   Box,
   Container,
+  LinearProgress,
   Snackbar,
   Typography,
 } from '@mui/material';
 import { useLocale } from '../context/LocaleContext.jsx';
+import { getPendingCount, subscribeToNetworkActivity } from '../api/client.js';
+
+const WAKEUP_NOTICE_DELAY_MS = 4000;
+const SLOW_NOTICE_DELAY_MS = 60000;
+const WAKEUP_NOTICE_TEXT = 'Serwer się wybudza (darmowy hosting). To może potrwać do ~60s.';
+const SLOW_NOTICE_TEXT = 'To trwa dłużej niż zwykle. Spróbuj odświeżyć lub ponowić.';
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [flash, setFlash] = useState(null);
+  const [pendingCount, setPendingCount] = useState(() => getPendingCount());
+  const [networkNotice, setNetworkNotice] = useState('');
+  const networkTimersRef = useRef({ wakeup: null, slow: null });
+  const wasNetworkActiveRef = useRef(false);
   const { t } = useLocale();
+
+  const clearNetworkTimers = useCallback(() => {
+    if (networkTimersRef.current.wakeup) {
+      clearTimeout(networkTimersRef.current.wakeup);
+      networkTimersRef.current.wakeup = null;
+    }
+    if (networkTimersRef.current.slow) {
+      clearTimeout(networkTimersRef.current.slow);
+      networkTimersRef.current.slow = null;
+    }
+  }, []);
 
   useEffect(() => {
     const flashMessage = location.state?.flash;
@@ -29,8 +51,53 @@ export default function Layout() {
     setFlash(null);
   };
 
+  useEffect(() => {
+    const unsubscribe = subscribeToNetworkActivity((count) => {
+      setPendingCount(count);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const isNetworkActive = pendingCount > 0;
+    const wasNetworkActive = wasNetworkActiveRef.current;
+
+    if (isNetworkActive && !wasNetworkActive) {
+      setNetworkNotice('');
+      networkTimersRef.current.wakeup = setTimeout(() => {
+        setNetworkNotice(WAKEUP_NOTICE_TEXT);
+      }, WAKEUP_NOTICE_DELAY_MS);
+      networkTimersRef.current.slow = setTimeout(() => {
+        setNetworkNotice(SLOW_NOTICE_TEXT);
+      }, SLOW_NOTICE_DELAY_MS);
+    }
+
+    if (!isNetworkActive && wasNetworkActive) {
+      clearNetworkTimers();
+      setNetworkNotice('');
+    }
+
+    wasNetworkActiveRef.current = isNetworkActive;
+  }, [clearNetworkTimers, pendingCount]);
+
+  useEffect(() => () => clearNetworkTimers(), [clearNetworkTimers]);
+
   return (
     <>
+      {pendingCount > 0 ? (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: (theme) => theme.zIndex.appBar + 1,
+          }}
+        >
+          <LinearProgress color="secondary" />
+        </Box>
+      ) : null}
       <Box
         sx={{
           minHeight: '100vh',
@@ -99,6 +166,17 @@ export default function Layout() {
         {flash ? (
           <Alert onClose={handleFlashClose} severity={flash.severity || 'info'} sx={{ width: '100%' }}>
             {flash.message}
+          </Alert>
+        ) : null}
+      </Snackbar>
+      <Snackbar
+        open={pendingCount > 0 && Boolean(networkNotice)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ top: { xs: 72, sm: 84, md: 96 } }}
+      >
+        {networkNotice ? (
+          <Alert severity={networkNotice === SLOW_NOTICE_TEXT ? 'warning' : 'info'} sx={{ width: '100%' }}>
+            {networkNotice}
           </Alert>
         ) : null}
       </Snackbar>
