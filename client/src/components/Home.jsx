@@ -151,25 +151,6 @@ export default function Home() {
             <Typography variant="body2" color="text.secondary">
               {t('home.heroSubtitle')}
             </Typography>
-            <Box
-              sx={{
-                position: 'absolute',
-                bottom: 18,
-                right: 24,
-                width: 68,
-                height: 68,
-                borderRadius: '50%',
-                border: '2px solid rgba(51, 180, 172, 0.6)',
-                display: 'grid',
-                placeItems: 'center',
-                color: 'info.main',
-                fontFamily: 'var(--app-font-script)',
-                fontSize: '1.1rem',
-                transform: 'rotate(8deg)',
-              }}
-            >
-              RSVP
-            </Box>
           </Paper>
           <Paper
             elevation={0}

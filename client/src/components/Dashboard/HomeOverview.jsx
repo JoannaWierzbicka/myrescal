@@ -443,10 +443,6 @@ export default function HomeOverview() {
             )}
           </Box>
 
-          <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
-            {t('dashboard.reservations')}
-          </Typography>
-
           <ReservationList
             reservations={filteredReservations}
             onDeleteReservation={handleDelete}
