@@ -6,9 +6,7 @@ import { useLocale } from '../context/LocaleContext.jsx';
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
-  const { t, language } = useLocale();
-  const accentLabel = language === 'pl' ? 'Planowanie z uśmiechem' : 'Plan your stay with a smile';
-  const signatureLabel = language === 'pl' ? '1974 // wyjątkowe pobyty' : '1974 // signature stays';
+  const { t } = useLocale();
 
   return (
     <Box
@@ -44,7 +42,7 @@ export default function Home() {
               mb: 1,
             }}
           >
-            {accentLabel}
+            {t('home.heroAccent')}
           </Typography>
           <Typography
             variant="h1"
@@ -190,12 +188,10 @@ export default function Home() {
               variant="subtitle2"
               sx={{ letterSpacing: '0.15rem', fontSize: '0.85rem', mb: 1, color: 'primary.main' }}
             >
-              {signatureLabel}
+              {t('home.highlightCardTitle')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {language === 'pl'
-                ? 'Układaj grafiki rezerwacji jak karty pocztowe.'
-                : 'Arrange every reservation like a keepsake postcard.'}
+              {t('home.highlightCardDescription')}
             </Typography>
           </Paper>
         </Box>

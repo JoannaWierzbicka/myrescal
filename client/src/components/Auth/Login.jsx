@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Alert, Box, Button, TextField, Typography } from '@mui/material';
+import { Alert, Button, TextField, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../../api/auth.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLocale } from '../../context/LocaleContext.jsx';
+import AuthFormLayout from './AuthFormLayout.jsx';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -30,9 +31,9 @@ function Login() {
   };
 
   return (
-    <Box maxWidth={400} mx="auto">
+    <AuthFormLayout>
       <Typography variant="h5" gutterBottom>{t('auth.loginTitle')}</Typography>
-      {error && <Alert severity="error">{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
       <form onSubmit={handleSubmit}>
         <TextField
           label={t('auth.email')}
@@ -64,7 +65,7 @@ function Login() {
           {isSubmitting ? t('auth.loginSubmitting') : t('auth.loginButton')}
         </Button>
       </form>
-    </Box>
+    </AuthFormLayout>
   );
 }
 

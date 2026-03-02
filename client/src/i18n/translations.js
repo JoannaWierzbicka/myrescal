@@ -10,14 +10,18 @@ export const translations = {
       register: 'Register',
       language: 'Language',
       roomSelector: 'Room',
+      brandTagline: 'Manage reservations',
     },
     home: {
+      heroAccent: 'Reservations fully under control',
       heroTitle: 'Manage your bookings like a pro',
       heroSubtitle:
         'A dedicated workspace for property owners to organise reservations, track availability, and keep every guest stay under control.',
       goToDashboard: 'Go to dashboard',
       login: 'Log in',
       createAccount: 'Create account',
+      highlightCardTitle: 'Reservation calendar',
+      highlightCardDescription: 'See occupancy at a glance and quickly edit stays.',
     },
     footer: {
       copyright: '© {{year}} MyResCal',
@@ -196,6 +200,7 @@ export const translations = {
       registerTitle: 'Register',
       email: 'Email',
       password: 'Password',
+      confirmPassword: 'Confirm password',
       loginButton: 'Login',
       loginSubmitting: 'Logging in...',
       loginError: 'Unable to log in. Please try again.',
@@ -205,6 +210,7 @@ export const translations = {
       registerSuccessAutoLogin: 'Thank you for registering! You have been logged in.',
       registerErrorExisting: 'An account with this email already exists.',
       registerErrorGeneric: 'Something went wrong during registration.',
+      confirmPasswordMismatch: 'Passwords must match.',
     },
     common: {
       yes: 'Yes',
@@ -226,14 +232,18 @@ export const translations = {
       register: 'Zarejestruj się',
       language: 'Język',
       roomSelector: 'Pokój',
+      brandTagline: 'Zarządzaj rezerwacjami',
     },
     home: {
+      heroAccent: 'Rezerwacje pod pełną kontrolą',
       heroTitle: 'Zarządzaj rezerwacjami jak profesjonalista',
       heroSubtitle:
         'Dedykowane miejsce pracy dla właścicieli, którzy chcą porządkować rezerwacje, kontrolować dostępność i dbać o każdy pobyt gości.',
       goToDashboard: 'Przejdź do panelu',
       login: 'Zaloguj się',
       createAccount: 'Załóż konto',
+      highlightCardTitle: 'Kalendarz rezerwacji',
+      highlightCardDescription: 'Zobacz obłożenie na pierwszy rzut oka i szybko edytuj pobyty.',
     },
     footer: {
       copyright: '© {{year}} MyResCal',
@@ -412,6 +422,7 @@ export const translations = {
       registerTitle: 'Rejestracja',
       email: 'E-mail',
       password: 'Hasło',
+      confirmPassword: 'Powtórz hasło',
       loginButton: 'Zaloguj się',
       loginSubmitting: 'Logowanie...',
       loginError: 'Nie udało się zalogować. Spróbuj ponownie.',
@@ -421,6 +432,7 @@ export const translations = {
       registerSuccessAutoLogin: 'Dziękujemy za rejestrację! Zostałeś zalogowany.',
       registerErrorExisting: 'Konto z tym adresem e-mail już istnieje.',
       registerErrorGeneric: 'Coś poszło nie tak podczas rejestracji.',
+      confirmPasswordMismatch: 'Hasła muszą być identyczne.',
     },
     common: {
       yes: 'Tak',

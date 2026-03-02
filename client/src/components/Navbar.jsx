@@ -31,9 +31,58 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const userLabel = user?.email || user?.phone || null;
-  const brandTagline = language === 'pl' ? 'Zaplanuj z nami' : 'Plan with us';
+  const brandTagline = t('navbar.brandTagline');
   const toggleLanguage = () => setLanguage(language === 'en' ? 'pl' : 'en');
   const languageLabel = language === 'en' ? 'PL' : 'EN';
+  const authActionButtonSx = {
+    boxShadow: 'none',
+    transform: 'none',
+    borderWidth: 2,
+    borderColor: 'rgba(250, 247, 240, 0.58)',
+    color: 'rgba(250, 247, 240, 0.92)',
+    backgroundColor: 'rgba(250, 247, 240, 0.06)',
+    '&:hover': {
+      boxShadow: 'none',
+      transform: 'none',
+      borderWidth: 2,
+      borderColor: 'rgba(250, 247, 240, 0.82)',
+      backgroundColor: 'rgba(250, 247, 240, 0.16)',
+    },
+    '&.active': {
+      borderColor: 'rgba(250, 247, 240, 0.9)',
+      backgroundColor: 'rgba(250, 247, 240, 0.2)',
+    },
+    '&.Mui-disabled': {
+      opacity: 1,
+      boxShadow: 'none',
+      transform: 'none',
+      borderColor: 'rgba(250, 247, 240, 0.58)',
+      color: 'rgba(250, 247, 240, 0.92)',
+      backgroundColor: 'rgba(250, 247, 240, 0.06)',
+    },
+  };
+  const drawerAuthActionButtonSx = {
+    boxShadow: 'none',
+    transform: 'none',
+    borderWidth: 2,
+    borderColor: 'rgba(31, 60, 74, 0.4)',
+    color: 'primary.main',
+    '&:hover': {
+      boxShadow: 'none',
+      transform: 'none',
+      borderWidth: 2,
+      borderColor: 'rgba(31, 60, 74, 0.6)',
+      backgroundColor: 'rgba(31, 60, 74, 0.08)',
+    },
+    '&.Mui-disabled': {
+      opacity: 1,
+      boxShadow: 'none',
+      transform: 'none',
+      borderColor: 'rgba(31, 60, 74, 0.4)',
+      color: 'primary.main',
+      backgroundColor: 'transparent',
+    },
+  };
 
   const handleLogout = () => {
     logout();
@@ -135,7 +184,7 @@ export default function Navbar() {
                 component="span"
                 sx={{
                   fontFamily: 'var(--app-font-script)',
-                  fontSize: { xs: '1.3rem', md: '1.5rem' },
+                  fontSize: { xs: '1.3rem', md: '1rem' },
                   color: 'info.light',
                   mt: 0.4,
                 }}
@@ -210,17 +259,24 @@ export default function Navbar() {
                 </Button>
                 {renderLanguageButton()}
                 <Button
-                  variant="text"
+                  variant="outlined"
                   color="inherit"
                   onClick={handleLogout}
                   disabled={isLoggingOut}
+                  sx={authActionButtonSx}
                 >
                   {isLoggingOut ? t('navbar.loggingOut') : t('navbar.logout')}
                 </Button>
               </>
             ) : (
               <>
-                <Button component={NavLink} to="/login" color="inherit" variant="text">
+                <Button
+                  component={NavLink}
+                  to="/login"
+                  color="inherit"
+                  variant="outlined"
+                  sx={authActionButtonSx}
+                >
                   {t('navbar.login')}
                 </Button>
                 <Button component={NavLink} to="/register" color="inherit" variant="outlined">
@@ -317,11 +373,11 @@ export default function Navbar() {
             {renderLanguageButton({ fullWidth: true })}
             {isAuthenticated ? (
               <Button
-                variant="contained"
-                color="primary"
+                variant="outlined"
                 onClick={handleLogout}
                 disabled={isLoggingOut}
                 fullWidth
+                sx={drawerAuthActionButtonSx}
               >
                 {isLoggingOut ? t('navbar.loggingOut') : t('navbar.logout')}
               </Button>
@@ -330,10 +386,10 @@ export default function Navbar() {
                 <Button
                   component={NavLink}
                   to="/login"
-                  variant="contained"
-                  color="info"
+                  variant="outlined"
                   onClick={() => setMenuOpen(false)}
                   fullWidth
+                  sx={drawerAuthActionButtonSx}
                 >
                   {t('navbar.login')}
                 </Button>

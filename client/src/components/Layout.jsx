@@ -30,6 +30,7 @@ export default function Layout() {
   const { t } = useLocale();
   const { errorMessage, retryCallback, clearError } = useGlobalError();
   const hasGlobalError = Boolean(errorMessage);
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   const clearNetworkTimers = useCallback(() => {
     if (networkTimersRef.current.wakeup) {
@@ -135,7 +136,7 @@ export default function Layout() {
             position: 'relative',
             flexGrow: 1,
             display: 'flex',
-            alignItems: 'stretch',
+            alignItems: isAuthPage ? 'center' : 'stretch',
             pt: { xs: 8, sm: 10, md: 12 },
             pb: { xs: 10, md: 12 },
             px: { xs: 1.5, sm: 2, md: 0 },
@@ -149,15 +150,15 @@ export default function Layout() {
           }}
         >
           <Container
-            maxWidth="lg"
+            maxWidth={isAuthPage ? 'sm' : 'lg'}
             sx={{
               position: 'relative',
               px: { xs: 2.5, sm: 3.5, md: 5 },
               py: { xs: 2, sm: 3 },
-              borderRadius: { xs: 1, md: 1 },
-              backdropFilter: 'blur(8px)',
-              backgroundColor: 'rgba(251, 247, 240, 0.82)',
-              boxShadow: '0 32px 80px rgba(21, 40, 50, 0.2)',
+              borderRadius: isAuthPage ? 0 : { xs: 1, md: 1 },
+              backdropFilter: isAuthPage ? 'none' : 'blur(8px)',
+              backgroundColor: isAuthPage ? 'transparent' : 'rgba(251, 247, 240, 0.82)',
+              boxShadow: isAuthPage ? 'none' : '0 32px 80px rgba(21, 40, 50, 0.2)',
               flexGrow: 1,
             }}
           >
