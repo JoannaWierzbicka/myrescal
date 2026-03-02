@@ -4,6 +4,7 @@ import Navbar from './Navbar.jsx';
 import {
   Alert,
   Box,
+  Button,
   Container,
   LinearProgress,
   Snackbar,
@@ -11,6 +12,7 @@ import {
 } from '@mui/material';
 import { useLocale } from '../context/LocaleContext.jsx';
 import { getPendingCount, subscribeToNetworkActivity } from '../api/client.js';
+import { useGlobalError } from '../context/ErrorContext.jsx';
 
 const WAKEUP_NOTICE_DELAY_MS = 4000;
 const SLOW_NOTICE_DELAY_MS = 60000;
@@ -26,6 +28,8 @@ export default function Layout() {
   const networkTimersRef = useRef({ wakeup: null, slow: null });
   const wasNetworkActiveRef = useRef(false);
   const { t } = useLocale();
+  const { errorMessage, retryCallback, clearError } = useGlobalError();
+  const hasGlobalError = Boolean(errorMessage);
 
   const clearNetworkTimers = useCallback(() => {
     if (networkTimersRef.current.wakeup) {
@@ -49,6 +53,24 @@ export default function Layout() {
   const handleFlashClose = (_event, reason) => {
     if (reason === 'clickaway') return;
     setFlash(null);
+  };
+
+  const handleGlobalErrorClose = (_event, reason) => {
+    if (reason === 'clickaway') return;
+    clearError();
+  };
+
+  const handleRetry = async () => {
+    const callback = retryCallback;
+    clearError();
+
+    if (typeof callback !== 'function') return;
+
+    try {
+      await callback();
+    } catch {
+      // apiClient reports retry failures globally.
+    }
   };
 
   useEffect(() => {
@@ -158,7 +180,7 @@ export default function Layout() {
         </Box>
       </Box>
       <Snackbar
-        open={Boolean(flash)}
+        open={Boolean(flash) && !hasGlobalError}
         autoHideDuration={4000}
         onClose={handleFlashClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
@@ -170,13 +192,35 @@ export default function Layout() {
         ) : null}
       </Snackbar>
       <Snackbar
-        open={pendingCount > 0 && Boolean(networkNotice)}
+        open={pendingCount > 0 && Boolean(networkNotice) && !hasGlobalError && !flash}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         sx={{ top: { xs: 72, sm: 84, md: 96 } }}
       >
         {networkNotice ? (
           <Alert severity={networkNotice === SLOW_NOTICE_TEXT ? 'warning' : 'info'} sx={{ width: '100%' }}>
             {networkNotice}
+          </Alert>
+        ) : null}
+      </Snackbar>
+      <Snackbar
+        open={hasGlobalError}
+        onClose={handleGlobalErrorClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        {errorMessage ? (
+          <Alert
+            onClose={handleGlobalErrorClose}
+            severity="error"
+            action={
+              retryCallback ? (
+                <Button color="inherit" size="small" onClick={handleRetry}>
+                  Spróbuj ponownie
+                </Button>
+              ) : null
+            }
+            sx={{ width: '100%' }}
+          >
+            {errorMessage}
           </Alert>
         ) : null}
       </Snackbar>

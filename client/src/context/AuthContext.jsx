@@ -61,8 +61,10 @@ export function AuthProvider({ children }) {
       })
       .catch((error) => {
         if (error?.name === 'AbortError') return;
-        authStorage.clear();
-        setAuthState(initialState);
+        if (error?.status === 401) {
+          authStorage.clear();
+          setAuthState(initialState);
+        }
       })
       .finally(() => {
         setAuthChecked(true);
