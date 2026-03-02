@@ -1,6 +1,6 @@
 ## Supabase setup
 
-Wykonaj poniższe dwa zestawy zapytań SQL (w tej kolejności) w edytorze SQL Supabase. Każdy fragment uruchamiasz tylko raz na środowisko. Zapytania zakładają, że pracujesz w schemacie `public`.
+Wykonaj poniższe trzy zestawy zapytań SQL (w tej kolejności) w edytorze SQL Supabase. Każdy fragment uruchamiasz tylko raz na środowisko. Zapytania zakładają, że pracujesz w schemacie `public`.
 
 ---
 
@@ -81,6 +81,8 @@ alter table public.reservations
 create index if not exists properties_owner_idx on public.properties(owner_id);
 create index if not exists rooms_owner_idx on public.rooms(owner_id);
 create index if not exists rooms_property_idx on public.rooms(property_id);
+create unique index if not exists rooms_property_name_unique
+  on public.rooms(owner_id, property_id, lower(btrim(name)));
 create index if not exists reservations_property_idx on public.reservations(property_id);
 create index if not exists reservations_room_idx on public.reservations(room_id);
 
@@ -100,6 +102,54 @@ create policy "Users manage own rooms" on public.rooms
   for all
   using (auth.uid() = owner_id)
   with check (auth.uid() = owner_id);
+```
+
+---
+
+### 3. Uwagi i rozdzielenie cen (za dobę / za pobyt)
+
+Uruchom skrypt `server/supabase/reservations_notes_pricing.sql` albo wklej poniższy blok:
+
+```sql
+alter table public.reservations
+  add column if not exists notes text,
+  add column if not exists nightly_rate numeric,
+  add column if not exists total_price numeric;
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'reservations'
+      and column_name = 'price'
+  ) then
+    execute '
+      update public.reservations
+      set total_price = price
+      where total_price is null and price is not null
+    ';
+  end if;
+end $$;
+
+do $$
+begin
+  alter table public.reservations
+    add constraint reservations_nightly_rate_non_negative
+    check (nightly_rate is null or nightly_rate >= 0);
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.reservations
+    add constraint reservations_total_price_non_negative
+    check (total_price is null or total_price >= 0);
+exception
+  when duplicate_object then null;
+end $$;
 ```
 
 ---

@@ -42,6 +42,8 @@ function ReservationDetail() {
       }),
     [language],
   );
+  const nightlyRate = reservation.nightly_rate;
+  const totalPrice = reservation.total_price ?? reservation.price;
 
   const handleDelete = async () => {
     if (window.confirm(t('reservationDetail.deleteConfirm'))) {
@@ -103,13 +105,22 @@ function ReservationDetail() {
           <DetailItem label={t('reservationDetail.property')} value={reservation.property?.name || '—'} />
           <DetailItem label={t('reservationDetail.room')} value={reservation.room?.name || '—'} />
           <DetailItem
-            label={t('reservationDetail.price')}
+            label={t('reservationDetail.nightlyRate')}
             value={
-              reservation.price !== undefined
-                ? numberFormatter.format(Number(reservation.price))
+              nightlyRate !== undefined && nightlyRate !== null
+                ? numberFormatter.format(Number(nightlyRate))
                 : '—'
             }
           />
+          <DetailItem
+            label={t('reservationDetail.totalPrice')}
+            value={
+              totalPrice !== undefined && totalPrice !== null
+                ? numberFormatter.format(Number(totalPrice))
+                : '—'
+            }
+          />
+          <DetailItem label={t('reservationDetail.notes')} value={reservation.notes || '—'} />
           <DetailItem label={t('reservationDetail.from')} value={formatDate(reservation.start_date)} />
           <DetailItem label={t('reservationDetail.to')} value={formatDate(reservation.end_date)} />
           <DetailItem label={t('reservationDetail.adults')} value={reservation.adults ?? '—'} />

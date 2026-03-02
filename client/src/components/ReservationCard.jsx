@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { Box, Button, Card, CardActions, CardContent, Typography } from '@mui/material';
+import { Box, Button, Card, CardActions, CardContent, Tooltip, Typography } from '@mui/material';
 import { format } from 'date-fns';
 import { useLocale } from '../context/LocaleContext.jsx';
 import { getReservationStatusMeta } from '../utils/reservationStatus.js';
@@ -31,6 +31,9 @@ function ReservationCard({ reservation, onEdit, onDelete, onView, disabled = fal
   const formattedEnd = formatDate(reservation.end_date);
   const propertyName = reservation.property?.name ?? '—';
   const roomName = reservation.room?.name ?? '—';
+  const nightlyRate = reservation.nightly_rate;
+  const totalPrice = reservation.total_price ?? reservation.price;
+  const notes = reservation.notes?.trim() || '';
   const adultsProvided = reservation.adults !== undefined && reservation.adults !== null;
   const childrenProvided = reservation.children !== undefined && reservation.children !== null;
   const guestSummary = (() => {
@@ -166,12 +169,45 @@ function ReservationCard({ reservation, onEdit, onDelete, onView, disabled = fal
           <Typography component="dd" sx={{ margin: 0, fontWeight: 600 }}>{formattedEnd}</Typography>
 
           <Typography component="dt" sx={{ textTransform: 'uppercase', letterSpacing: '0.08rem' }}>
-            {t('reservationCard.price')}
+            {t('reservationCard.nightlyRate')}
           </Typography>
           <Typography component="dd" sx={{ margin: 0, fontWeight: 600 }}>
-            {reservation.price !== undefined && reservation.price !== null
-              ? numberFormatter.format(Number(reservation.price))
+            {nightlyRate !== undefined && nightlyRate !== null
+              ? numberFormatter.format(Number(nightlyRate))
               : '—'}
+          </Typography>
+
+          <Typography component="dt" sx={{ textTransform: 'uppercase', letterSpacing: '0.08rem' }}>
+            {t('reservationCard.totalPrice')}
+          </Typography>
+          <Typography component="dd" sx={{ margin: 0, fontWeight: 600 }}>
+            {totalPrice !== undefined && totalPrice !== null
+              ? numberFormatter.format(Number(totalPrice))
+              : '—'}
+          </Typography>
+
+          <Typography component="dt" sx={{ textTransform: 'uppercase', letterSpacing: '0.08rem' }}>
+            {t('reservationCard.notes')}
+          </Typography>
+          <Typography component="dd" sx={{ margin: 0 }}>
+            {notes ? (
+              <Tooltip title={notes} arrow>
+                <Box
+                  component="span"
+                  sx={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {notes}
+                </Box>
+              </Tooltip>
+            ) : '—'}
           </Typography>
         </Box>
       </CardContent>

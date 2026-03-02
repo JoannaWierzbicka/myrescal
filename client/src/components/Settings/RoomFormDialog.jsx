@@ -29,6 +29,7 @@ export default function RoomFormDialog({
   const [formValues, setFormValues] = useState(EMPTY_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [nameError, setNameError] = useState(null);
   const { t } = useLocale();
 
   useEffect(() => {
@@ -40,10 +41,15 @@ export default function RoomFormDialog({
     } else {
       setFormValues(EMPTY_FORM);
     }
+    setError(null);
+    setNameError(null);
   }, [initialValues]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    if (name === 'name' || name === 'property_id') {
+      setNameError(null);
+    }
     setFormValues((prev) => ({
       ...prev,
       [name]: value,
@@ -57,12 +63,14 @@ export default function RoomFormDialog({
       return;
     }
     if (!formValues.name.trim()) {
-      setError(t('roomForm.errors.name'));
+      setNameError(t('roomForm.errors.name'));
+      setError(null);
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
+    setNameError(null);
 
     try {
       await onSubmit({
@@ -71,11 +79,18 @@ export default function RoomFormDialog({
       });
       onClose();
     } catch (err) {
-      setError(err.message || t('roomForm.errors.generic'));
+      if (err?.message === 'Room name must be unique within this property.') {
+        setNameError(t('roomForm.errors.uniqueName'));
+        setError(null);
+      } else {
+        setError(err.message || t('roomForm.errors.generic'));
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const disableSave = isSubmitting || properties.length === 0 || !formValues.property_id || !formValues.name.trim() || Boolean(nameError);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -110,6 +125,8 @@ export default function RoomFormDialog({
             required
             value={formValues.name}
             onChange={handleChange}
+            error={Boolean(nameError)}
+            helperText={nameError || ' '}
           />
 
           {error && (
@@ -124,7 +141,7 @@ export default function RoomFormDialog({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={isSubmitting || properties.length === 0}
+          disabled={disableSave}
         >
           {isSubmitting ? t('roomForm.saving') : t('roomForm.save')}
         </Button>
