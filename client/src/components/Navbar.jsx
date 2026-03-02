@@ -93,7 +93,7 @@ export default function Navbar() {
               gap: 1.6,
               px: { xs: 2.4, md: 2.6 },
               py: { xs: 1.1, md: 1.3 },
-              borderRadius: 999,
+              borderRadius: '28px',
               border: '1px solid rgba(195, 111, 43, 0.45)',
               background: 'rgba(250, 247, 240, 0.1)',
               boxShadow: '0 14px 28px rgba(15, 36, 46, 0.32)',

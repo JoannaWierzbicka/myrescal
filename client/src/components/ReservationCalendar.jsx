@@ -93,7 +93,7 @@ const ReservationCalendar = ({
 
   if (rooms.length === 0) {
     return (
-      <Box sx={{ p: 2, border: '1px dashed', borderColor: 'grey.300', borderRadius: 1 }}>
+      <Box sx={{ p: 2, border: '1px dashed', borderColor: 'grey.300', borderRadius: '12px' }}>
         <Typography variant="body2" color="text.secondary">
           {t('calendar.noRooms')}
         </Typography>
@@ -143,7 +143,7 @@ const ReservationCalendar = ({
           borderLeft: '1px solid',
           borderTop: '1px solid',
           borderColor: 'grey.300',
-          borderRadius: 1,
+          borderRadius: '12px',
           overflow: 'hidden',
           minWidth: '100%',
           position: 'relative',
@@ -453,7 +453,6 @@ const MonthlyCalendar = ({
             width: { xs: '100%', sm: 'auto' },
             mt: { xs: 1, sm: 0 },
             '& .MuiOutlinedInput-root': {
-              borderRadius: { xs: 3, sm: 10 },
               fontSize: { xs: '0.95rem', sm: '1rem' },
               '& .MuiSelect-select': {
                 py: { xs: 0.7, sm: 1 },

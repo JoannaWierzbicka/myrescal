@@ -398,7 +398,6 @@ export default function HomeOverview() {
                 }
                 sx={{
                   width: { xs: 'auto', sm: 'auto' },
-                  borderRadius: 999,
                   px: { xs: 3.2, sm: 4 },
                   py: { xs: 0.95, sm: 1.1 },
                   letterSpacing: { xs: '0.16em', sm: '0.18em' },

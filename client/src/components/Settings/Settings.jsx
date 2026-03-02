@@ -211,7 +211,7 @@ export default function Settings() {
           sx={{
             flex: { xs: '1 1 100%', lg: '1 1 40%' },
             minWidth: { xs: '100%', lg: 0 },
-            borderRadius: 5,
+            borderRadius: '12px',
             px: { xs: 3, sm: 4, lg: 4.5 },
             py: { xs: 3.2, sm: 3.8, lg: 4.2 },
           }}
@@ -242,7 +242,6 @@ export default function Settings() {
                 sx={{
                   px: { xs: 2.5, sm: 3 },
                   minWidth: { xs: 0, sm: 170 },
-                  borderRadius: 3,
                   alignSelf: { xs: 'flex-end', sm: 'center' },
                 }}
               >
@@ -293,7 +292,7 @@ export default function Settings() {
                         selected={property.id === selectedPropertyId}
                         onClick={() => setSelectedPropertyId(property.id)}
                         sx={{
-                          borderRadius: 3,
+                          borderRadius: '12px',
                           px: { xs: 2.4, sm: 2.8 },
                           py: { xs: 1.4, sm: 1.6 },
                           '&.Mui-selected': {
@@ -324,7 +323,7 @@ export default function Settings() {
           sx={{
             flex: { xs: '1 1 100%', lg: '1 1 60%' },
             minWidth: { xs: '100%', lg: 0 },
-            borderRadius: 5,
+            borderRadius: '12px',
             px: { xs: 3, sm: 4, lg: 4.5 },
             py: { xs: 3.2, sm: 3.8, lg: 4.2 },
           }}
@@ -356,7 +355,6 @@ export default function Settings() {
                 sx={{
                   px: { xs: 2.5, sm: 3 },
                   minWidth: { xs: 0, sm: 170 },
-                  borderRadius: 3,
                   alignSelf: { xs: 'flex-end', sm: 'center' },
                 }}
               >
@@ -390,7 +388,7 @@ export default function Settings() {
                       sx={{
                         px: { xs: 2.4, sm: 2.8 },
                         py: { xs: 1.2, sm: 1.4 },
-                        borderRadius: 3,
+                        borderRadius: '12px',
                         '&:hover': {
                           backgroundColor: 'rgba(51, 180, 172, 0.08)',
                         },
