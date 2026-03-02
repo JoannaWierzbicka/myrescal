@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Box, Button, TextField, Typography } from '@mui/material';
+import { Alert, Button, TextField, Typography } from '@mui/material';
 import { registerUser, loginUser } from '../../api/auth.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLocale } from '../../context/LocaleContext.jsx';
+import AuthFormLayout from './AuthFormLayout.jsx';
 
 function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
@@ -24,6 +27,11 @@ function Register() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+    if (password !== confirmPassword) {
+      setConfirmPasswordError(t('auth.confirmPasswordMismatch'));
+      return;
+    }
+    setConfirmPasswordError('');
     setIsSubmitting(true);
 
     try {
@@ -66,7 +74,7 @@ function Register() {
   };
 
   return (
-    <Box maxWidth={400} mx="auto">
+    <AuthFormLayout>
       <Typography variant="h5" gutterBottom>{t('auth.registerTitle')}</Typography>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -90,7 +98,29 @@ function Register() {
           autoComplete="new-password"
           margin="normal"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={(event) => {
+            setPassword(event.target.value);
+            if (confirmPasswordError) {
+              setConfirmPasswordError('');
+            }
+          }}
+        />
+        <TextField
+          label={t('auth.confirmPassword')}
+          fullWidth
+          required
+          type="password"
+          autoComplete="new-password"
+          margin="normal"
+          value={confirmPassword}
+          onChange={(event) => {
+            setConfirmPassword(event.target.value);
+            if (confirmPasswordError) {
+              setConfirmPasswordError('');
+            }
+          }}
+          error={Boolean(confirmPasswordError)}
+          helperText={confirmPasswordError}
         />
         <Button
           type="submit"
@@ -102,7 +132,7 @@ function Register() {
           {isSubmitting ? t('auth.registerSubmitting') : t('auth.registerButton')}
         </Button>
       </form>
-    </Box>
+    </AuthFormLayout>
   );
 }
 
