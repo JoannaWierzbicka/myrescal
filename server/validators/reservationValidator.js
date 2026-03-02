@@ -11,6 +11,9 @@ export const RESERVATION_STATUSES = Object.freeze([
 export const DEFAULT_RESERVATION_STATUS = 'preliminary';
 
 const REQUIRED_FIELDS = new Set(['name', 'lastname', 'start_date', 'end_date', 'property_id', 'room_id']);
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_INPUT_REGEX = /^\+?[\d\s\-()]{6,25}$/;
+const MAX_NOTES_LENGTH = 1000;
 
 const toNumber = (value, field) => {
   const parsed = Number(value);
@@ -18,6 +21,62 @@ const toNumber = (value, field) => {
     throw createHttpError(400, `Field "${field}" must be a valid number.`);
   }
   return parsed;
+};
+
+const normalizeString = (value) => {
+  if (value === undefined || value === null) return null;
+  const trimmed = String(value).trim();
+  return trimmed.length === 0 ? null : trimmed;
+};
+
+const normalizeNonNegativeNumber = (value, field) => {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  const parsed = toNumber(value, field);
+  if (parsed < 0) {
+    throw createHttpError(400, `Field "${field}" must be greater than or equal to 0.`);
+  }
+  return parsed;
+};
+
+const normalizeEmail = (value) => {
+  const normalized = normalizeString(value);
+  if (!normalized) return null;
+
+  if (!EMAIL_REGEX.test(normalized)) {
+    throw createHttpError(400, 'Invalid email');
+  }
+
+  return normalized;
+};
+
+const normalizePhone = (value) => {
+  const normalized = normalizeString(value);
+  if (!normalized) return null;
+
+  if (!PHONE_INPUT_REGEX.test(normalized)) {
+    throw createHttpError(400, 'Invalid phone number');
+  }
+
+  const digits = normalized.replace(/\D/g, '');
+  if (digits.length < 6 || digits.length > 15) {
+    throw createHttpError(400, 'Invalid phone number');
+  }
+
+  return `${normalized.startsWith('+') ? '+' : ''}${digits}`;
+};
+
+const normalizeNotes = (value) => {
+  const normalized = normalizeString(value);
+  if (!normalized) return null;
+
+  if (normalized.length > MAX_NOTES_LENGTH) {
+    throw createHttpError(400, `Field "notes" must be at most ${MAX_NOTES_LENGTH} characters long.`);
+  }
+
+  return normalized;
 };
 
 export const validateReservationPayload = (payload) => {
@@ -52,31 +111,24 @@ export const validateReservationPayload = (payload) => {
     throw createHttpError(400, 'End date must be after the start date.');
   }
 
-  const normalizeString = (value) => {
-    if (value === undefined || value === null) return null;
-    const trimmed = String(value).trim();
-    return trimmed.length === 0 ? null : trimmed;
-  };
-
-  const normalizeNumber = (value, field) => {
-    if (value === undefined || value === null || value === '') {
-      return null;
-    }
-    return toNumber(value, field);
-  };
+  const legacyPrice = normalizeNonNegativeNumber(payload.price, 'price');
+  const nightlyRate = normalizeNonNegativeNumber(payload.nightly_rate, 'nightly_rate');
+  const totalPrice = normalizeNonNegativeNumber(payload.total_price, 'total_price');
 
   const result = {
     name: String(payload.name).trim(),
     lastname: String(payload.lastname).trim(),
-    phone: normalizeString(payload.phone),
-    mail: normalizeString(payload.mail),
+    phone: normalizePhone(payload.phone),
+    mail: normalizeEmail(payload.mail),
     start_date: payload.start_date,
     end_date: payload.end_date,
     property_id: String(payload.property_id),
     room_id: String(payload.room_id),
-    price: normalizeNumber(payload.price, 'price'),
-    adults: normalizeNumber(payload.adults, 'adults'),
-    children: normalizeNumber(payload.children, 'children'),
+    nightly_rate: nightlyRate,
+    total_price: totalPrice ?? legacyPrice,
+    adults: normalizeNonNegativeNumber(payload.adults, 'adults'),
+    children: normalizeNonNegativeNumber(payload.children, 'children'),
+    notes: normalizeNotes(payload.notes),
   };
 
   if (payload.status !== undefined && payload.status !== null && String(payload.status).trim() !== '') {

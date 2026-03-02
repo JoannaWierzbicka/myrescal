@@ -1,21 +1,39 @@
-import { useCallback, useMemo } from 'react';
-import { Box, Button, Card, CardActions, CardContent, Typography } from '@mui/material';
+import { useCallback } from 'react';
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import {
+  Box,
+  Card,
+  CardActions,
+  CardContent,
+  Divider,
+  IconButton,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import { format } from 'date-fns';
 import { useLocale } from '../context/LocaleContext.jsx';
 import { getReservationStatusMeta } from '../utils/reservationStatus.js';
 
 function ReservationCard({ reservation, onEdit, onDelete, onView, disabled = false }) {
-  const { t, dateLocale, language } = useLocale();
-  const statusMeta = getReservationStatusMeta(reservation.status);
-  const numberFormatter = useMemo(
-    () =>
-      new Intl.NumberFormat(language === 'pl' ? 'pl-PL' : 'en-US', {
-        style: 'currency',
-        currency: 'PLN',
-        maximumFractionDigits: 2,
-      }),
-    [language],
-  );
+  const { t, dateLocale } = useLocale();
+  const isDepositPaid = reservation.deposit_paid === true || reservation.status === 'deposit_paid';
+  const effectiveStatus = isDepositPaid
+    ? 'deposit_paid'
+    : (typeof reservation.status === 'string' && reservation.status.trim()) || 'preliminary';
+  const statusMeta = getReservationStatusMeta(effectiveStatus);
+  const statusLabel = (() => {
+    if (effectiveStatus === 'deposit_paid') return t('reservationStatus.depositPaid');
+    if (effectiveStatus === 'confirmed') return t('reservationStatus.confirmed');
+    if (effectiveStatus === 'booking') return t('reservationStatus.booking');
+    if (effectiveStatus === 'past') return t('reservationStatus.past');
+    if (effectiveStatus === 'preliminary') return t('reservationStatus.preliminary');
+    if (typeof reservation.status === 'string' && reservation.status.trim()) {
+      return reservation.status.replaceAll('_', ' ');
+    }
+    return t('reservationStatus.preliminary');
+  })();
 
   const formatDate = useCallback(
     (value) => {
@@ -29,25 +47,8 @@ function ReservationCard({ reservation, onEdit, onDelete, onView, disabled = fal
 
   const formattedStart = formatDate(reservation.start_date);
   const formattedEnd = formatDate(reservation.end_date);
-  const propertyName = reservation.property?.name ?? '—';
+  const guestName = [reservation.name, reservation.lastname].filter(Boolean).join(' ') || '—';
   const roomName = reservation.room?.name ?? '—';
-  const adultsProvided = reservation.adults !== undefined && reservation.adults !== null;
-  const childrenProvided = reservation.children !== undefined && reservation.children !== null;
-  const guestSummary = (() => {
-    if (adultsProvided && childrenProvided) {
-      return t('reservationCard.guestsSummary', {
-        adults: reservation.adults,
-        children: reservation.children,
-      });
-    }
-    if (adultsProvided) {
-      return `${t('common.adults')}: ${reservation.adults}`;
-    }
-    if (childrenProvided) {
-      return `${t('common.children')}: ${reservation.children}`;
-    }
-    return '—';
-  })();
 
   return (
     <Card
@@ -58,7 +59,9 @@ function ReservationCard({ reservation, onEdit, onDelete, onView, disabled = fal
       sx={{
         position: 'relative',
         height: '100%',
-        width: '100%',
+        width: { xs: 'min(100%, 320px)', sm: 320 },
+        maxWidth: '100%',
+        boxSizing: 'border-box',
         cursor: disabled ? 'not-allowed' : 'pointer',
         display: 'flex',
         flexDirection: 'column',
@@ -76,15 +79,30 @@ function ReservationCard({ reservation, onEdit, onDelete, onView, disabled = fal
       }}
       elevation={0}
     >
+      <Tooltip title={statusLabel} arrow>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '14px',
+            right: '14px',
+            zIndex: 2,
+            width: '16px',
+            height: '16px',
+            borderRadius: '50%',
+            backgroundColor: statusMeta.color,
+          }}
+        />
+      </Tooltip>
+
       <CardContent
         sx={{
           position: 'relative',
           zIndex: 1,
           display: 'grid',
           gap: 2,
-          pt: 4,
-          pb: 3,
-          px: 4,
+          pt: { xs: 2.5, sm: 3 },
+          pb: { xs: 6.5, sm: 7 },
+          px: { xs: 3, sm: 4 },
         }}
       >
         <Box>
@@ -93,140 +111,60 @@ function ReservationCard({ reservation, onEdit, onDelete, onView, disabled = fal
             sx={{
               fontSize: '1.4rem',
               letterSpacing: '0.08rem',
+              width: '100%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
-            {reservation.name} {reservation.lastname}
-          </Typography>
-          <Box
-            sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 1,
-              borderRadius: 999,
-              px: 1.8,
-              py: 0.6,
-              mt: 1.5,
-              backgroundColor: statusMeta.background,
-              color: statusMeta.color,
-              letterSpacing: '0.14em',
-              fontSize: '0.7rem',
-              textTransform: 'uppercase',
-              fontWeight: 600,
-            }}
-          >
-            {t(statusMeta.labelKey)}
-          </Box>
-          <Typography
-            sx={{
-              fontFamily: 'var(--app-font-script)',
-              fontSize: '1.2rem',
-              color: 'info.dark',
-              mt: 1.5,
-            }}
-          >
-            {guestSummary}
+            {guestName}
           </Typography>
         </Box>
-        <Box
-          component="dl"
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'max-content 1fr',
-            columnGap: 2,
-            rowGap: 1.2,
-            fontSize: '0.95rem',
-            color: 'text.secondary',
-          }}
-        >
-          <Typography component="dt" sx={{ textTransform: 'uppercase', letterSpacing: '0.08rem' }}>
-            {t('reservationCard.guestName')}
+        <Divider />
+        <Box sx={{ display: 'grid', gap: 1.5 }}>
+          <Typography variant="body1">
+            {t('reservationCard.room')} {roomName}
           </Typography>
-          <Typography component="dd" sx={{ margin: 0 }}>
-            {reservation.name} {reservation.lastname}
-          </Typography>
-
-          <Typography component="dt" sx={{ textTransform: 'uppercase', letterSpacing: '0.08rem' }}>
-            {t('reservationCard.property')}
-          </Typography>
-          <Typography component="dd" sx={{ margin: 0 }}>{propertyName}</Typography>
-
-          <Typography component="dt" sx={{ textTransform: 'uppercase', letterSpacing: '0.08rem' }}>
-            {t('reservationCard.room')}
-          </Typography>
-          <Typography component="dd" sx={{ margin: 0 }}>{roomName}</Typography>
-
-          <Typography component="dt" sx={{ textTransform: 'uppercase', letterSpacing: '0.08rem' }}>
-            {t('reservationCard.from')}
-          </Typography>
-          <Typography component="dd" sx={{ margin: 0, fontWeight: 600 }}>{formattedStart}</Typography>
-
-          <Typography component="dt" sx={{ textTransform: 'uppercase', letterSpacing: '0.08rem' }}>
-            {t('reservationCard.to')}
-          </Typography>
-          <Typography component="dd" sx={{ margin: 0, fontWeight: 600 }}>{formattedEnd}</Typography>
-
-          <Typography component="dt" sx={{ textTransform: 'uppercase', letterSpacing: '0.08rem' }}>
-            {t('reservationCard.price')}
-          </Typography>
-          <Typography component="dd" sx={{ margin: 0, fontWeight: 600 }}>
-            {reservation.price !== undefined && reservation.price !== null
-              ? numberFormatter.format(Number(reservation.price))
-              : '—'}
-          </Typography>
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+            <CalendarMonthOutlinedIcon fontSize="small" />
+            <Typography variant="body2">
+              {formattedStart} — {formattedEnd}
+            </Typography>
+          </Box>
         </Box>
       </CardContent>
-
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 18,
-          right: 32,
-          width: 72,
-          height: 72,
-          borderRadius: '50%',
-          border: '2px solid rgba(51, 180, 172, 0.65)',
-          backgroundColor: 'rgba(51, 180, 172, 0.15)',
-          display: 'grid',
-          placeItems: 'center',
-          fontFamily: 'var(--app-font-script)',
-          fontSize: '1.15rem',
-          color: 'info.dark',
-          transform: 'rotate(10deg)',
-          pointerEvents: 'none',
-        }}
-      >
-        RSVP
-      </Box>
 
       <CardActions
         onClick={(event) => event.stopPropagation()}
         sx={{
-          px: 4,
-          pb: 3,
-          pt: 1,
+          position: 'absolute',
+          right: 3,
+          bottom: 2,
+          p: 0,
           display: 'flex',
-          justifyContent: 'space-between',
-          gap: 1.5,
+          justifyContent: 'flex-end',
+          gap: 0.5,
+          zIndex: 1,
         }}
       >
-        <Button
-          variant="outlined"
+        <IconButton
           color="primary"
+          size="small"
+          aria-label={t('reservationCard.actions.edit')}
           onClick={() => onEdit?.()}
           disabled={disabled}
-          sx={{ flex: 1 }}
         >
-          {t('reservationCard.actions.edit')}
-        </Button>
-        <Button
-          variant="outlined"
+          <EditOutlinedIcon fontSize="small" />
+        </IconButton>
+        <IconButton
           color="error"
+          size="small"
+          aria-label={t('reservationCard.actions.delete')}
           onClick={() => onDelete?.()}
           disabled={disabled}
-          sx={{ flex: 1 }}
         >
-          {t('reservationCard.actions.delete')}
-        </Button>
+          <DeleteOutlineIcon fontSize="small" />
+        </IconButton>
       </CardActions>
     </Card>
   );

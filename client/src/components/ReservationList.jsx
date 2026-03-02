@@ -28,6 +28,9 @@ const SORT_OPTIONS = [
   { value: 'property', labelKey: 'reservationList.sortOptions.property' },
   { value: 'room', labelKey: 'reservationList.sortOptions.room' },
 ];
+const CARD_MIN_WIDTH = 280;
+const CARD_MAX_WIDTH = 320;
+const GRID_GAP_PX = 24;
 
 const getRoomName = (reservation) => reservation?.room?.name ?? '';
 const getPropertyName = (reservation) => reservation?.property?.name ?? '';
@@ -122,13 +125,16 @@ function ReservationList({
   return (
     <Box>
       <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="stretch"
-        mb={4}
-        flexDirection={{ xs: 'column', md: 'row' }}
-        gap={3}
         sx={{
+          display: 'flex',
+          justifyContent: {
+            xs: 'flex-start',
+            sm: showHeader ? 'space-between' : 'center',
+          },
+          alignItems: { xs: 'stretch', sm: 'center' },
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 2,
+          mb: 3,
           p: { xs: 2.4, sm: 3, md: 0 },
           borderRadius: { xs: '12px', md: 0 },
           border: { xs: '1px solid rgba(195, 111, 43, 0.25)', md: 'none' },
@@ -139,8 +145,8 @@ function ReservationList({
           },
         }}
       >
-        <Box sx={{ flexGrow: 1 }}>
-          {showHeader && (
+        {showHeader && (
+          <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
             <Typography
               variant="h4"
               component="h2"
@@ -152,8 +158,8 @@ function ReservationList({
             >
               {t('reservationList.title')}
             </Typography>
-          )}
-        </Box>
+          </Box>
+        )}
 
         <Box
           display="flex"
@@ -161,7 +167,7 @@ function ReservationList({
           gap={{ xs: 1.5, lg: 2 }}
           alignItems={{ xs: 'stretch', lg: 'center' }}
           sx={{
-            width: { xs: '100%', md: 'auto' },
+            width: { xs: '100%', sm: 'auto' },
             backgroundColor: { xs: 'transparent', sm: 'rgba(251, 247, 240, 0.92)' },
             borderRadius: { xs: 0, sm: '12px' },
             border: { xs: 'none', sm: '1px solid rgba(195, 111, 43, 0.3)' },
@@ -170,7 +176,7 @@ function ReservationList({
               md: '0 18px 40px rgba(25, 41, 49, 0.16)',
             },
             px: { xs: 0, sm: 2.4, md: 3 },
-            py: { xs: 0, sm: 1.8, md: 2.5 },
+            py: { xs: 0, sm: 1.8, md: 1.8 },
           }}
         >
           {hasRoomFilter && (
@@ -276,33 +282,32 @@ function ReservationList({
         </Card>
       ) : (
         <Box
-          display="flex"
-          flexWrap="wrap"
-          justifyContent={{ xs: 'stretch', sm: 'center' }}
-          gap={2}
+          sx={(theme) => ({
+            display: 'grid',
+            width: '100%',
+            maxWidth: `${CARD_MAX_WIDTH * 3 + GRID_GAP_PX * 2}px`,
+            mx: 'auto',
+            px: { xs: 2, sm: 3 },
+            gridTemplateColumns: `minmax(0, ${CARD_MAX_WIDTH}px)`,
+            [theme.breakpoints.between(700, 1199.95)]: {
+              gridTemplateColumns: `repeat(2, minmax(${CARD_MIN_WIDTH}px, ${CARD_MAX_WIDTH}px))`,
+            },
+            [theme.breakpoints.up('lg')]: {
+              gridTemplateColumns: `repeat(3, minmax(${CARD_MIN_WIDTH}px, ${CARD_MAX_WIDTH}px))`,
+            },
+            justifyContent: 'center',
+            gap: 3,
+          })}
         >
           {sortedReservations.map((reservation) => (
-            <Box
+            <ReservationCard
               key={reservation.id}
-              sx={{
-                flex: {
-                  xs: '1 1 100%',
-                  sm: '1 1 calc(50% - 16px)',
-                  lg: '1 1 calc(33.333% - 20px)',
-                  xl: '1 1 calc(25% - 24px)',
-                },
-                minWidth: { xs: '100%', sm: '260px' },
-                maxWidth: { xs: '100%', sm: '320px' },
-              }}
-            >
-              <ReservationCard
-                reservation={reservation}
-                onView={() => navigate(`/dashboard/detail/${reservation.id}`)}
-                onEdit={() => onEditReservation?.(reservation)}
-                onDelete={() => requestDelete(reservation)}
-                disabled={pendingDeleteId === reservation.id}
-              />
-            </Box>
+              reservation={reservation}
+              onView={() => navigate(`/dashboard/detail/${reservation.id}`)}
+              onEdit={() => onEditReservation?.(reservation)}
+              onDelete={() => requestDelete(reservation)}
+              disabled={pendingDeleteId === reservation.id}
+            />
           ))}
         </Box>
       )}

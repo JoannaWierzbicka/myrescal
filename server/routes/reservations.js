@@ -101,6 +101,8 @@ router.post(
   asyncHandler(async (req, res) => {
     const reservation = validateReservationPayload(req.body);
     const ownerId = req.user.id;
+    const numberOfNights = calculateNumberOfNights(reservation.start_date, reservation.end_date);
+    const totalPrice = resolveTotalPrice(reservation, numberOfNights);
 
     const { property, room } = await ensureOwnership(ownerId, reservation.property_id, reservation.room_id);
 
@@ -113,6 +115,7 @@ router.post(
 
     const insertPayload = {
       ...reservation,
+      total_price: totalPrice,
       property_id: property.id,
       room_id: room.id,
       owner_id: ownerId,
@@ -153,6 +156,8 @@ router.put(
     const { id } = req.params;
     const ownerId = req.user.id;
     const reservation = validateReservationPayload(req.body);
+    const numberOfNights = calculateNumberOfNights(reservation.start_date, reservation.end_date);
+    const totalPrice = resolveTotalPrice(reservation, numberOfNights);
 
     const { property, room } = await ensureOwnership(ownerId, reservation.property_id, reservation.room_id);
 
@@ -166,6 +171,7 @@ router.put(
 
     const updatePayload = {
       ...reservation,
+      total_price: totalPrice,
       property_id: property.id,
       room_id: room.id,
     };
@@ -350,4 +356,60 @@ function withComputedReservationStatus(reservations) {
       isPast: computedStatus === 'past',
     };
   });
+}
+
+function parseDateToUtcDay(dateValue) {
+  const value = String(dateValue || '');
+  const parts = value.split('-');
+  if (parts.length !== 3) {
+    throw createHttpError(400, 'Invalid reservation dates.');
+  }
+
+  const [yearRaw, monthRaw, dayRaw] = parts;
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+    throw createHttpError(400, 'Invalid reservation dates.');
+  }
+
+  const utcTimestamp = Date.UTC(year, month - 1, day);
+  const parsedDate = new Date(utcTimestamp);
+
+  if (
+    Number.isNaN(parsedDate.getTime()) ||
+    parsedDate.getUTCFullYear() !== year ||
+    parsedDate.getUTCMonth() !== month - 1 ||
+    parsedDate.getUTCDate() !== day
+  ) {
+    throw createHttpError(400, 'Invalid reservation dates.');
+  }
+
+  return utcTimestamp;
+}
+
+function calculateNumberOfNights(startDate, endDate) {
+  const startUtc = parseDateToUtcDay(startDate);
+  const endUtc = parseDateToUtcDay(endDate);
+  const differenceMs = endUtc - startUtc;
+  const nights = differenceMs / (1000 * 60 * 60 * 24);
+
+  if (!Number.isFinite(nights) || nights <= 0) {
+    throw createHttpError(400, 'End date must be after the start date.');
+  }
+
+  return nights;
+}
+
+function resolveTotalPrice(reservation, numberOfNights) {
+  if (reservation.total_price !== null && reservation.total_price !== undefined) {
+    return reservation.total_price;
+  }
+
+  if (reservation.nightly_rate === null || reservation.nightly_rate === undefined) {
+    return null;
+  }
+
+  return Number((reservation.nightly_rate * numberOfNights).toFixed(2));
 }

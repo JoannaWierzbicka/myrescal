@@ -139,10 +139,10 @@ export default function Navbar() {
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: 1.6,
-              px: { xs: 2.4, md: 2.6 },
-              py: { xs: 1.1, md: 1.3 },
-              borderRadius: '28px',
+              gap: { xs: 1.1, sm: 1.3, md: 1.6 },
+              px: { xs: 1.5, sm: 2, md: 2.6 },
+              py: { xs: 0.75, sm: 0.95, md: 1.3 },
+              borderRadius: { xs: '22px', md: '28px' },
               border: '1px solid rgba(195, 111, 43, 0.45)',
               background: 'rgba(250, 247, 240, 0.1)',
               boxShadow: '0 14px 28px rgba(15, 36, 46, 0.32)',
@@ -157,8 +157,8 @@ export default function Navbar() {
           >
             <Box
               sx={{
-                width: 42,
-                height: 42,
+                width: { xs: 32, sm: 36, md: 42 },
+                height: { xs: 32, sm: 36, md: 42 },
                 borderRadius: '50%',
                 display: 'grid',
                 placeItems: 'center',
@@ -166,15 +166,15 @@ export default function Navbar() {
                 background: 'rgba(51, 180, 172, 0.15)',
               }}
             >
-              <FilterHdrIcon sx={{ fontSize: 22 }} />
+              <FilterHdrIcon sx={{ fontSize: { xs: 17, sm: 19, md: 22 } }} />
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1.05 }}>
               <Typography
                 variant="subtitle2"
                 sx={{
                   color: 'secondary.light',
-                  letterSpacing: '0.18em',
-                  fontSize: { xs: '0.78rem', md: '0.8rem' },
+                  letterSpacing: { xs: '0.14em', md: '0.18em' },
+                  fontSize: { xs: '0.66rem', sm: '0.72rem', md: '0.8rem' },
                   textTransform: 'uppercase',
                 }}
               >
@@ -184,9 +184,9 @@ export default function Navbar() {
                 component="span"
                 sx={{
                   fontFamily: 'var(--app-font-script)',
-                  fontSize: { xs: '1.3rem', md: '1rem' },
+                  fontSize: { xs: '0.92rem', sm: '1.02rem', md: '1rem' },
                   color: 'info.light',
-                  mt: 0.4,
+                  mt: { xs: 0.2, md: 0.4 },
                 }}
               >
                 {brandTagline}

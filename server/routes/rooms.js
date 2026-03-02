@@ -7,6 +7,7 @@ import { mapSupabaseError } from '../utils/mapSupabaseError.js';
 import { validateRoomPayload } from '../validators/roomValidator.js';
 
 const router = Router();
+const ROOM_UNIQUE_NAME_ERROR = 'Room name must be unique within this property.';
 
 router.use(requireAuth);
 
@@ -58,6 +59,12 @@ router.post(
       throw createHttpError(404, 'Property not found.');
     }
 
+    await ensureUniqueRoomNameWithinProperty({
+      ownerId,
+      propertyId: room.property_id,
+      roomName: room.name,
+    });
+
     const { data, error } = await supabase
       .from('rooms')
       .insert({ ...room, owner_id: ownerId })
@@ -65,6 +72,9 @@ router.post(
       .maybeSingle();
 
     if (error) {
+      if (isRoomNameUniqueViolation(error)) {
+        throw createHttpError(400, ROOM_UNIQUE_NAME_ERROR);
+      }
       throw mapSupabaseError(error);
     }
 
@@ -95,6 +105,13 @@ router.put(
       throw createHttpError(404, 'Property not found.');
     }
 
+    await ensureUniqueRoomNameWithinProperty({
+      ownerId,
+      propertyId: room.property_id,
+      roomName: room.name,
+      excludeRoomId: id,
+    });
+
     const { data, error } = await supabase
       .from('rooms')
       .update(room)
@@ -104,6 +121,9 @@ router.put(
       .maybeSingle();
 
     if (error) {
+      if (isRoomNameUniqueViolation(error)) {
+        throw createHttpError(400, ROOM_UNIQUE_NAME_ERROR);
+      }
       throw mapSupabaseError(error, error.status === 406 ? 404 : error.status);
     }
 
@@ -154,3 +174,44 @@ router.delete(
 );
 
 export default router;
+
+async function ensureUniqueRoomNameWithinProperty({
+  ownerId,
+  propertyId,
+  roomName,
+  excludeRoomId,
+}) {
+  const normalizedName = normalizeRoomName(roomName);
+
+  const { data, error } = await supabase
+    .from('rooms')
+    .select('id, name')
+    .eq('owner_id', ownerId)
+    .eq('property_id', propertyId);
+
+  if (error) {
+    throw mapSupabaseError(error);
+  }
+
+  const conflict = (data || []).find((existingRoom) => {
+    if (!existingRoom?.id || !existingRoom?.name) return false;
+    if (excludeRoomId && existingRoom.id === excludeRoomId) return false;
+    return normalizeRoomName(existingRoom.name) === normalizedName;
+  });
+
+  if (conflict) {
+    throw createHttpError(400, ROOM_UNIQUE_NAME_ERROR);
+  }
+}
+
+function normalizeRoomName(name) {
+  return String(name || '').trim().toLowerCase();
+}
+
+function isRoomNameUniqueViolation(error) {
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    error?.code === '23505'
+    && (message.includes('rooms_property_name_unique') || message.includes('lower(btrim(name))'))
+  );
+}
