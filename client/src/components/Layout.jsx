@@ -132,7 +132,7 @@ export default function Layout() {
               position: 'relative',
               px: { xs: 2.5, sm: 3.5, md: 5 },
               py: { xs: 2, sm: 3 },
-              borderRadius: { xs: 5, md: 7 },
+              borderRadius: { xs: 1, md: 1 },
               backdropFilter: 'blur(8px)',
               backgroundColor: 'rgba(251, 247, 240, 0.82)',
               boxShadow: '0 32px 80px rgba(21, 40, 50, 0.2)',

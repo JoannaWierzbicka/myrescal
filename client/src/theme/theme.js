@@ -14,6 +14,7 @@ const parchmentLayers = [
   'linear-gradient(180deg, #f9f3e7 0%, #f5eddd 50%, #efe4cf 100%)',
   `url(${parchmentNoise})`,
 ];
+const FORM_CONTROL_RADIUS = 28;
 
 const theme = createTheme({
   palette: {
@@ -188,7 +189,7 @@ const theme = createTheme({
           justifyContent: 'center',
           textAlign: 'center',
           lineHeight: 1.2,
-          borderRadius: 999,
+          borderRadius: FORM_CONTROL_RADIUS,
           paddingLeft: 24,
           paddingRight: 24,
           paddingTop: 10,
@@ -237,11 +238,18 @@ const theme = createTheme({
         },
       },
     },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: FORM_CONTROL_RADIUS,
+        },
+      },
+    },
     MuiPaper: {
       styleOverrides: {
         root: {
           backgroundColor: '#FBF7F0',
-          borderRadius: 24,
+          borderRadius: 18,
           border: '1px solid rgba(195, 111, 43, 0.18)',
           boxShadow:
             '0 24px 40px rgba(32, 29, 22, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
@@ -252,7 +260,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: '#FBF5EA',
-          borderRadius: 24,
+          borderRadius: 18,
           border: '2px solid rgba(195, 111, 43, 0.35)',
           boxShadow:
             '0 22px 35px rgba(25, 41, 49, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
@@ -263,7 +271,7 @@ const theme = createTheme({
       styleOverrides: {
         paper: {
           background: '#FBF7F0',
-          borderRadius: 28,
+          borderRadius: 18,
           border: '1px solid rgba(195, 111, 43, 0.35)',
           boxShadow:
             '0 34px 60px rgba(17, 32, 40, 0.33), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
@@ -284,7 +292,7 @@ const theme = createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          borderRadius: 18,
+          borderRadius: FORM_CONTROL_RADIUS,
           '& fieldset': {
             borderColor: 'rgba(31, 60, 74, 0.22)',
             borderWidth: 2,
@@ -296,6 +304,45 @@ const theme = createTheme({
             borderColor: '#33B4AC',
             borderWidth: 2,
             boxShadow: '0 0 0 3px rgba(51, 180, 172, 0.18)',
+          },
+        },
+      },
+    },
+    MuiFilledInput: {
+      styleOverrides: {
+        root: {
+          borderRadius: FORM_CONTROL_RADIUS,
+        },
+      },
+    },
+    MuiInputBase: {
+      styleOverrides: {
+        root: {
+          borderRadius: FORM_CONTROL_RADIUS,
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiInputBase-root': {
+            borderRadius: FORM_CONTROL_RADIUS,
+          },
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        select: {
+          borderRadius: FORM_CONTROL_RADIUS,
+        },
+      },
+    },
+    MuiAutocomplete: {
+      styleOverrides: {
+        root: {
+          '& .MuiInputBase-root': {
+            borderRadius: FORM_CONTROL_RADIUS,
           },
         },
       },

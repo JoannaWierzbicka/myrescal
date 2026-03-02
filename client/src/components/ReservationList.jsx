@@ -130,7 +130,7 @@ function ReservationList({
         gap={3}
         sx={{
           p: { xs: 2.4, sm: 3, md: 0 },
-          borderRadius: { xs: 5, md: 0 },
+          borderRadius: { xs: '12px', md: 0 },
           border: { xs: '1px solid rgba(195, 111, 43, 0.25)', md: 'none' },
           backgroundColor: { xs: 'rgba(251, 247, 240, 0.95)', md: 'transparent' },
           boxShadow: {
@@ -163,7 +163,7 @@ function ReservationList({
           sx={{
             width: { xs: '100%', md: 'auto' },
             backgroundColor: { xs: 'transparent', sm: 'rgba(251, 247, 240, 0.92)' },
-            borderRadius: { xs: 2, sm: 24, md: 30 },
+            borderRadius: { xs: 0, sm: '12px' },
             border: { xs: 'none', sm: '1px solid rgba(195, 111, 43, 0.3)' },
             boxShadow: {
               xs: 'none',
@@ -180,7 +180,6 @@ function ReservationList({
               sx={{
                 minWidth: { xs: '100%', sm: 200 },
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: { xs: 2, sm: 999 },
                   fontSize: { xs: '0.95rem', sm: '1rem' },
                   '& .MuiSelect-select': {
                     py: { xs: 0.55, sm: 0.9 },
@@ -199,7 +198,6 @@ function ReservationList({
                 value={roomFilterId}
                 label={t('reservationList.filterByRoom')}
                 onChange={(event) => onRoomFilterChange?.(event.target.value)}
-                sx={{ borderRadius: { xs: 2, sm: 999 } }}
               >
                 <MenuItem value="all">{t('reservationList.allRooms')}</MenuItem>
                 {rooms.map((room) => (
@@ -217,7 +215,6 @@ function ReservationList({
             sx={{
               minWidth: { xs: '100%', sm: 200 },
               '& .MuiOutlinedInput-root': {
-                borderRadius: { xs: 2, sm: 999 },
                 fontSize: { xs: '0.95rem', sm: '1rem' },
                 '& .MuiSelect-select': {
                   py: { xs: 0.55, sm: 0.9 },
@@ -234,7 +231,6 @@ function ReservationList({
               value={sortBy}
               label={t('reservationList.sortBy')}
               onChange={(event) => setSortBy(event.target.value)}
-              sx={{ borderRadius: { xs: 2, sm: 999 } }}
             >
               {SORT_OPTIONS.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
@@ -268,7 +264,6 @@ function ReservationList({
               onClick={() => onAddReservation?.()}
               disabled={!canAdd || !onAddReservation}
               sx={{
-                borderRadius: 999,
                 px: { xs: 3, sm: 4 },
                 py: { xs: 0.9, sm: 1 },
                 fontSize: { xs: '0.85rem', sm: '0.95rem' },

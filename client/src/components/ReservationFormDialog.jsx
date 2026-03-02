@@ -265,7 +265,7 @@ function ReservationFormDialog({
         >
           <Box
             sx={{
-              borderRadius: 4,
+              borderRadius: '12px',
               border: '1px solid rgba(195, 111, 43, 0.35)',
               backgroundColor: 'rgba(251, 245, 234, 0.8)',
               px: { xs: 2.5, sm: 3.5 },
@@ -315,7 +315,7 @@ function ReservationFormDialog({
 
           <Box
             sx={{
-              borderRadius: 4,
+              borderRadius: '12px',
               border: '1px solid rgba(195, 111, 43, 0.35)',
               backgroundColor: 'rgba(251, 245, 234, 0.92)',
               px: { xs: 2.5, sm: 3.5 },
@@ -433,7 +433,7 @@ function ReservationFormDialog({
 
           <Box
             sx={{
-              borderRadius: 4,
+              borderRadius: '12px',
               border: '1px solid rgba(195, 111, 43, 0.35)',
               backgroundColor: 'rgba(251, 245, 234, 0.8)',
               px: { xs: 2.5, sm: 3.5 },
