@@ -3,6 +3,8 @@ import { authStorage } from '../context/authStorage.js';
 export const AUTH_EVENTS = {
   UNAUTHORIZED: 'auth:unauthorized',
 };
+const TEMPORARY_SERVER_ERROR_MESSAGE =
+  'Serwer niedostępny lub chwilowy problem. Spróbuj ponownie.';
 
 const DEFAULT_API_BASE_URL = '/api';
 
@@ -15,6 +17,7 @@ const API_BASE_URL = normalizeBaseUrl(
   import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL,
 );
 
+let globalErrorHandler = null;
 let pendingCount = 0;
 const networkActivityListeners = new Set();
 
@@ -53,6 +56,32 @@ const parseResponse = async (response) => {
   return response.text();
 };
 
+const isTimeoutError = (error) => {
+  if (!error) return false;
+  const message = String(error.message || '').toLowerCase();
+  return error.name === 'TimeoutError' || message.includes('timeout');
+};
+
+const isNetworkError = (error) => error instanceof TypeError;
+
+const reportTemporaryServerError = ({ retryCallback }) => {
+  if (typeof globalErrorHandler !== 'function') return;
+  globalErrorHandler({
+    message: TEMPORARY_SERVER_ERROR_MESSAGE,
+    retryCallback: typeof retryCallback === 'function' ? retryCallback : null,
+  });
+};
+
+export function registerGlobalErrorHandler(handler) {
+  globalErrorHandler = typeof handler === 'function' ? handler : null;
+
+  return () => {
+    if (globalErrorHandler === handler) {
+      globalErrorHandler = null;
+    }
+  };
+}
+
 export async function apiClient(path, { method = 'GET', data, headers, signal } = {}) {
   const session = authStorage.getSession();
   const authToken = session?.access_token;
@@ -75,6 +104,13 @@ export async function apiClient(path, { method = 'GET', data, headers, signal } 
     config.headers['Content-Type'] = config.headers['Content-Type'] || 'application/json';
   }
 
+  const retryCallback = () =>
+    apiClient(path, {
+      method,
+      data,
+      headers,
+    });
+
   incrementPendingCount();
 
   try {
@@ -87,6 +123,8 @@ export async function apiClient(path, { method = 'GET', data, headers, signal } 
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent(AUTH_EVENTS.UNAUTHORIZED));
         }
+      } else if (response.status >= 500) {
+        reportTemporaryServerError({ retryCallback });
       }
 
       const message =
@@ -100,6 +138,16 @@ export async function apiClient(path, { method = 'GET', data, headers, signal } 
     }
 
     return payload;
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw error;
+    }
+
+    if (isNetworkError(error) || isTimeoutError(error)) {
+      reportTemporaryServerError({ retryCallback });
+    }
+
+    throw error;
   } finally {
     decrementPendingCount();
   }
