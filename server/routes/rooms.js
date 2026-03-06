@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { supabase } from '../auth/supabaseClient.js';
+import { getSupabaseUser } from '../auth/supabaseClient.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { createHttpError } from '../utils/httpError.js';
@@ -15,6 +15,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
     const { property_id: propertyId } = req.query;
 
     let query = supabase
@@ -41,6 +42,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
     const room = validateRoomPayload(req.body);
 
     // Ensure property belongs to owner
@@ -60,6 +62,7 @@ router.post(
     }
 
     await ensureUniqueRoomNameWithinProperty({
+      supabase,
       ownerId,
       propertyId: room.property_id,
       roomName: room.name,
@@ -86,6 +89,7 @@ router.put(
   '/:id',
   asyncHandler(async (req, res) => {
     const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
     const { id } = req.params;
     const room = validateRoomPayload(req.body);
 
@@ -106,6 +110,7 @@ router.put(
     }
 
     await ensureUniqueRoomNameWithinProperty({
+      supabase,
       ownerId,
       propertyId: room.property_id,
       roomName: room.name,
@@ -139,6 +144,7 @@ router.delete(
   '/:id',
   asyncHandler(async (req, res) => {
     const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
     const { id } = req.params;
 
     const { data: existingRoom, error: existingRoomError } = await supabase
@@ -176,6 +182,7 @@ router.delete(
 export default router;
 
 async function ensureUniqueRoomNameWithinProperty({
+  supabase,
   ownerId,
   propertyId,
   roomName,

@@ -19,12 +19,16 @@ dotenv.config();
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
-const allowedOrigins = process.env.CORS_ORIGIN?.split(',')
+const corsOrigin = process.env.CORS_ORIGIN || process.env.CLIENT_ORIGIN || '';
+const allowedOrigins = corsOrigin.split(',')
   .map((origin) => origin.trim())
   .filter(Boolean) || [];
 
 if (process.env.NODE_ENV !== 'production') {
   console.log('CORS allowed origins:', allowedOrigins);
+  if (!process.env.CORS_ORIGIN && process.env.CLIENT_ORIGIN) {
+    console.warn('[env] CLIENT_ORIGIN is deprecated. Please use CORS_ORIGIN.');
+  }
 }
 
 const corsOptions = {

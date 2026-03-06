@@ -1,15 +1,16 @@
 import { Router } from 'express';
-import { supabase } from '../auth/supabaseClient.js';
+import { getSupabaseUser } from '../auth/supabaseClient.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { createHttpError } from '../utils/httpError.js';
-import { mapSupabaseError } from '../utils/mapSupabaseError.js';
+import { isReservationOverlapError, mapSupabaseError } from '../utils/mapSupabaseError.js';
 import {
   validateReservationPayload,
   DEFAULT_RESERVATION_STATUS,
 } from '../validators/reservationValidator.js';
 
 const router = Router();
+const RESERVATION_OVERLAP_MESSAGE = 'Room is already booked for selected dates.';
 
 router.use(requireAuth);
 
@@ -18,6 +19,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const { lastname, start_date: startDate, property_id: propertyId } = req.query;
     const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
 
     let query = supabase
       .from('reservations')
@@ -63,6 +65,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
 
     const { data, error } = await supabase
       .from('reservations')
@@ -101,17 +104,31 @@ router.post(
   asyncHandler(async (req, res) => {
     const reservation = validateReservationPayload(req.body);
     const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
     const numberOfNights = calculateNumberOfNights(reservation.start_date, reservation.end_date);
     const totalPrice = resolveTotalPrice(reservation, numberOfNights);
 
-    const { property, room } = await ensureOwnership(ownerId, reservation.property_id, reservation.room_id);
-
-    await ensureRoomAvailability({
+    const { property, room } = await ensureOwnership(
+      supabase,
       ownerId,
-      roomId: room.id,
-      startDate: reservation.start_date,
-      endDate: reservation.end_date,
-    });
+      reservation.property_id,
+      reservation.room_id,
+    );
+
+    try {
+      await ensureRoomAvailability({
+        supabase,
+        ownerId,
+        roomId: room.id,
+        startDate: reservation.start_date,
+        endDate: reservation.end_date,
+      });
+    } catch (error) {
+      if (error?.status === 409) {
+        return sendReservationOverlap(res);
+      }
+      throw error;
+    }
 
     const insertPayload = {
       ...reservation,
@@ -143,6 +160,9 @@ router.post(
       .maybeSingle();
 
     if (error) {
+      if (isReservationOverlapError(error)) {
+        return sendReservationOverlap(res);
+      }
       throw mapSupabaseError(error);
     }
 
@@ -155,19 +175,33 @@ router.put(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
     const reservation = validateReservationPayload(req.body);
     const numberOfNights = calculateNumberOfNights(reservation.start_date, reservation.end_date);
     const totalPrice = resolveTotalPrice(reservation, numberOfNights);
 
-    const { property, room } = await ensureOwnership(ownerId, reservation.property_id, reservation.room_id);
-
-    await ensureRoomAvailability({
+    const { property, room } = await ensureOwnership(
+      supabase,
       ownerId,
-      roomId: room.id,
-      startDate: reservation.start_date,
-      endDate: reservation.end_date,
-      excludeReservationId: id,
-    });
+      reservation.property_id,
+      reservation.room_id,
+    );
+
+    try {
+      await ensureRoomAvailability({
+        supabase,
+        ownerId,
+        roomId: room.id,
+        startDate: reservation.start_date,
+        endDate: reservation.end_date,
+        excludeReservationId: id,
+      });
+    } catch (error) {
+      if (error?.status === 409) {
+        return sendReservationOverlap(res);
+      }
+      throw error;
+    }
 
     const updatePayload = {
       ...reservation,
@@ -200,6 +234,9 @@ router.put(
       .maybeSingle();
 
     if (error) {
+      if (isReservationOverlapError(error)) {
+        return sendReservationOverlap(res);
+      }
       throw mapSupabaseError(error, error.status === 406 ? 404 : error.status);
     }
 
@@ -216,6 +253,7 @@ router.delete(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
 
     const { data: existingReservation, error: existingReservationError } = await supabase
       .from('reservations')
@@ -251,7 +289,16 @@ router.delete(
 
 export default router;
 
-async function ensureOwnership(ownerId, propertyId, roomId) {
+function sendReservationOverlap(res) {
+  return res.status(409).json({
+    error: {
+      code: 'RESERVATION_OVERLAP',
+      message: RESERVATION_OVERLAP_MESSAGE,
+    },
+  });
+}
+
+async function ensureOwnership(supabase, ownerId, propertyId, roomId) {
   const errors = [];
 
   if (!propertyId) {
@@ -305,7 +352,14 @@ async function ensureOwnership(ownerId, propertyId, roomId) {
   return { property, room };
 }
 
-async function ensureRoomAvailability({ ownerId, roomId, startDate, endDate, excludeReservationId }) {
+async function ensureRoomAvailability({
+  supabase,
+  ownerId,
+  roomId,
+  startDate,
+  endDate,
+  excludeReservationId,
+}) {
   if (!roomId || !startDate || !endDate) {
     return;
   }
@@ -329,7 +383,7 @@ async function ensureRoomAvailability({ ownerId, roomId, startDate, endDate, exc
   }
 
   if (Array.isArray(data) && data.length > 0) {
-    throw createHttpError(409, 'Room is already booked for the selected dates.');
+    throw createHttpError(409, RESERVATION_OVERLAP_MESSAGE);
   }
 }
 

@@ -494,30 +494,6 @@ function ReservationFormDialog({
         </IconButton>
       </DialogTitle>
       <DialogContent dividers>
-        {dataError && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {dataError}
-          </Alert>
-        )}
-
-        {(properties?.length === 0 && !loadingProperties) && (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            {t('reservationForm.info.addProperty')}
-          </Alert>
-        )}
-
-        {dateConflict && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            {t('reservationForm.errors.conflict')}
-          </Alert>
-        )}
-
-        {error && (
-          <Typography color="error" variant="body2" mb={2}>
-            {error}
-          </Typography>
-        )}
-
         <Box
           component="form"
           onSubmit={handleSubmit}
@@ -817,13 +793,36 @@ function ReservationFormDialog({
               }
             />
           </Box>
+          {dataError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {dataError}
+          </Alert>
+        )}
+
+        {(properties?.length === 0 && !loadingProperties) && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            {t('reservationForm.info.addProperty')}
+          </Alert>
+        )}
+
+        {dateConflict && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {t('reservationForm.errors.conflict')}
+          </Alert>
+        )}
+
+        {error && (
+          <Typography color="error" variant="body2" mb={2}>
+            {error}
+          </Typography>
+        )}
 
           <DialogActions sx={{ justifyContent: 'space-between', mt: 1, px: 0 }}>
             <Button
               onClick={onCancel}
               color="secondary"
               startIcon={<FaTimes />}
-              disabled={isSubmitting}
+              ddisabled={isSubmitting || dateConflict || dataError}
             >
               {t('reservationForm.cancel')}
             </Button>

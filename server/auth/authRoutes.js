@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { supabase } from './supabaseClient.js';
+import { getSupabaseUser } from './supabaseClient.js';
 import { requireAuth } from './requireAuth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { createHttpError } from '../utils/httpError.js';
@@ -10,6 +10,7 @@ router.post(
   '/register',
   asyncHandler(async (req, res) => {
     const { email, password } = req.body || {};
+    const supabase = getSupabaseUser();
 
     if (!email || !password) {
       throw createHttpError(400, 'Email and password are required.');
@@ -33,6 +34,7 @@ router.post(
   '/login',
   asyncHandler(async (req, res) => {
     const { email, password } = req.body || {};
+    const supabase = getSupabaseUser();
 
     if (!email || !password) {
       throw createHttpError(400, 'Email and password are required.');
@@ -58,7 +60,8 @@ router.post(
       throw createHttpError(400, 'Missing access token.');
     }
 
-    const { error } = await supabase.auth.signOut({ access_token: token });
+    const supabase = getSupabaseUser(token);
+    const { error } = await supabase.auth.signOut();
 
     if (error) {
       const message = error.message || 'Unable to log out.';
