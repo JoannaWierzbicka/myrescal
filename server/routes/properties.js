@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { supabase } from '../auth/supabaseClient.js';
+import { getSupabaseUser } from '../auth/supabaseClient.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { createHttpError } from '../utils/httpError.js';
@@ -14,6 +14,8 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
+
     const { data, error } = await supabase
       .from('properties')
       .select('*')
@@ -32,6 +34,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
     const property = validatePropertyPayload(req.body);
 
     const { data, error } = await supabase
@@ -52,6 +55,7 @@ router.put(
   '/:id',
   asyncHandler(async (req, res) => {
     const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
     const { id } = req.params;
     const property = validatePropertyPayload(req.body);
 
@@ -79,6 +83,7 @@ router.delete(
   '/:id',
   asyncHandler(async (req, res) => {
     const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
     const { id } = req.params;
 
     const { data: existingProperty, error: existingPropertyError } = await supabase
