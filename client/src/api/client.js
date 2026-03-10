@@ -46,6 +46,14 @@ const buildUrl = (path) => {
   return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 };
 
+const generateRequestId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `req-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+};
+
 const parseResponse = async (response) => {
   const contentType = response.headers.get('content-type') || '';
 
@@ -63,6 +71,42 @@ const isTimeoutError = (error) => {
 };
 
 const isNetworkError = (error) => error instanceof TypeError;
+
+const normalizeApiErrorPayload = (payload, fallbackMessage) => {
+  if (!payload || typeof payload !== 'object') {
+    return {
+      code: null,
+      message: typeof payload === 'string' ? payload : fallbackMessage,
+      details: null,
+      requestId: null,
+    };
+  }
+
+  if (payload.error && typeof payload.error === 'object') {
+    return {
+      code: payload.error.code || null,
+      message: payload.error.message || fallbackMessage,
+      details: payload.error.details ?? null,
+      requestId: payload.requestId || null,
+    };
+  }
+
+  if (typeof payload.error === 'string') {
+    return {
+      code: payload.code || null,
+      message: payload.error || fallbackMessage,
+      details: payload.details ?? null,
+      requestId: payload.requestId || null,
+    };
+  }
+
+  return {
+    code: payload.code || null,
+    message: payload.message || fallbackMessage,
+    details: payload.details ?? null,
+    requestId: payload.requestId || null,
+  };
+};
 
 const reportTemporaryServerError = ({ retryCallback }) => {
   if (typeof globalErrorHandler !== 'function') return;
@@ -85,11 +129,13 @@ export function registerGlobalErrorHandler(handler) {
 export async function apiClient(path, { method = 'GET', data, headers, signal } = {}) {
   const session = authStorage.getSession();
   const authToken = session?.access_token;
+  const requestId = generateRequestId();
 
   const config = {
     method,
     headers: {
       Accept: 'application/json',
+      'X-Request-Id': requestId,
       ...(headers || {}),
     },
     signal,
@@ -116,6 +162,7 @@ export async function apiClient(path, { method = 'GET', data, headers, signal } 
   try {
     const response = await fetch(buildUrl(path), config);
     const payload = await parseResponse(response).catch(() => null);
+    const responseRequestId = response.headers.get('x-request-id');
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -127,13 +174,16 @@ export async function apiClient(path, { method = 'GET', data, headers, signal } 
         reportTemporaryServerError({ retryCallback });
       }
 
-      const message =
-        typeof payload === 'object' && payload?.error
-          ? payload.error
-          : payload || response.statusText || 'Unknown API error';
-      const error = new Error(message);
+      const normalizedError = normalizeApiErrorPayload(
+        payload,
+        response.statusText || 'Unknown API error',
+      );
+      const error = new Error(normalizedError.message);
       error.status = response.status;
       error.payload = payload;
+      error.code = normalizedError.code;
+      error.details = normalizedError.details;
+      error.requestId = normalizedError.requestId || responseRequestId || requestId;
       throw error;
     }
 

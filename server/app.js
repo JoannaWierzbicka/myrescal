@@ -10,6 +10,10 @@ import reservationsRouter from './routes/reservations.js';
 import propertiesRouter from './routes/properties.js';
 import roomsRouter from './routes/rooms.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { requestIdMiddleware, requestLoggingMiddleware } from './middleware/requestContext.js';
+import { createHttpError } from './utils/httpError.js';
+import { logger } from './utils/logger.js';
+import { initMonitoring } from './utils/monitoring.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,12 +26,15 @@ const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const corsOrigin = process.env.CORS_ORIGIN || process.env.CLIENT_ORIGIN || '';
 const allowedOrigins = corsOrigin.split(',')
   .map((origin) => origin.trim())
-  .filter(Boolean) || [];
+  .filter(Boolean);
 
 if (process.env.NODE_ENV !== 'production') {
-  console.log('CORS allowed origins:', allowedOrigins);
+  logger.info('config.cors.allowed_origins', { allowedOrigins });
   if (!process.env.CORS_ORIGIN && process.env.CLIENT_ORIGIN) {
-    console.warn('[env] CLIENT_ORIGIN is deprecated. Please use CORS_ORIGIN.');
+    logger.warn('config.env.deprecated_client_origin', {
+      variable: 'CLIENT_ORIGIN',
+      replacement: 'CORS_ORIGIN',
+    });
   }
 }
 
@@ -43,17 +50,20 @@ const corsOptions = {
       return;
     }
 
-    callback(new Error('Not allowed by CORS'));
+    callback(createHttpError(403, 'Not allowed by CORS.', null, 'CORS_ORIGIN_NOT_ALLOWED'));
   },
   credentials: false,
 };
+
+const createRateLimitHandler = (message) => (req, _res, next) =>
+  next(createHttpError(429, message, null, 'RATE_LIMITED'));
 
 const apiLimiter = rateLimit({
   windowMs: RATE_LIMIT_WINDOW_MS,
   max: Number(process.env.API_RATE_LIMIT_MAX) || 300,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: { error: 'Too many requests. Please try again later.' },
+  handler: createRateLimitHandler('Too many requests. Please try again later.'),
 });
 
 const loginLimiter = rateLimit({
@@ -61,10 +71,12 @@ const loginLimiter = rateLimit({
   max: Number(process.env.AUTH_LOGIN_RATE_LIMIT_MAX) || 10,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+  handler: createRateLimitHandler('Too many login attempts. Please try again in 15 minutes.'),
 });
 
 app.disable('x-powered-by');
+app.use(requestIdMiddleware);
+app.use(requestLoggingMiddleware);
 app.use(
   helmet({
     crossOriginEmbedderPolicy: false,
@@ -98,6 +110,11 @@ app.use(express.static(path.join(__dirname, 'static')));
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+initMonitoring();
+
 app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+  logger.info('server.started', {
+    port,
+    nodeEnv: process.env.NODE_ENV || 'development',
+  });
 });

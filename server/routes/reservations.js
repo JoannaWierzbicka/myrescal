@@ -11,6 +11,7 @@ import {
 
 const router = Router();
 const RESERVATION_OVERLAP_MESSAGE = 'Room is already booked for selected dates.';
+const RESERVATION_OVERLAP_CODE = 'RESERVATION_OVERLAP';
 
 router.use(requireAuth);
 
@@ -125,7 +126,7 @@ router.post(
       });
     } catch (error) {
       if (error?.status === 409) {
-        return sendReservationOverlap(res);
+        throw createReservationOverlapError();
       }
       throw error;
     }
@@ -161,7 +162,7 @@ router.post(
 
     if (error) {
       if (isReservationOverlapError(error)) {
-        return sendReservationOverlap(res);
+        throw createReservationOverlapError();
       }
       throw mapSupabaseError(error);
     }
@@ -198,7 +199,7 @@ router.put(
       });
     } catch (error) {
       if (error?.status === 409) {
-        return sendReservationOverlap(res);
+        throw createReservationOverlapError();
       }
       throw error;
     }
@@ -235,7 +236,7 @@ router.put(
 
     if (error) {
       if (isReservationOverlapError(error)) {
-        return sendReservationOverlap(res);
+        throw createReservationOverlapError();
       }
       throw mapSupabaseError(error, error.status === 406 ? 404 : error.status);
     }
@@ -289,13 +290,13 @@ router.delete(
 
 export default router;
 
-function sendReservationOverlap(res) {
-  return res.status(409).json({
-    error: {
-      code: 'RESERVATION_OVERLAP',
-      message: RESERVATION_OVERLAP_MESSAGE,
-    },
-  });
+function createReservationOverlapError() {
+  return createHttpError(
+    409,
+    RESERVATION_OVERLAP_MESSAGE,
+    null,
+    RESERVATION_OVERLAP_CODE,
+  );
 }
 
 async function ensureOwnership(supabase, ownerId, propertyId, roomId) {
@@ -320,7 +321,8 @@ async function ensureOwnership(supabase, ownerId, propertyId, roomId) {
     .maybeSingle();
 
   if (propertyError) {
-    throw createHttpError(
+    throw mapSupabaseError(
+      propertyError,
       propertyError.status || 500,
       propertyError.message || 'Failed to validate property.',
     );
@@ -338,7 +340,11 @@ async function ensureOwnership(supabase, ownerId, propertyId, roomId) {
     .maybeSingle();
 
   if (roomError) {
-    throw createHttpError(roomError.status || 500, roomError.message || 'Failed to validate room.');
+    throw mapSupabaseError(
+      roomError,
+      roomError.status || 500,
+      roomError.message || 'Failed to validate room.',
+    );
   }
 
   if (!room) {
@@ -383,7 +389,7 @@ async function ensureRoomAvailability({
   }
 
   if (Array.isArray(data) && data.length > 0) {
-    throw createHttpError(409, RESERVATION_OVERLAP_MESSAGE);
+    throw createReservationOverlapError();
   }
 }
 

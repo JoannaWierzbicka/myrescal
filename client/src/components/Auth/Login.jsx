@@ -5,6 +5,7 @@ import { loginUser } from '../../api/auth.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLocale } from '../../context/LocaleContext.jsx';
 import AuthFormLayout from './AuthFormLayout.jsx';
+import { isApiErrorCode } from '../../api/errorUtils.js';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -24,7 +25,11 @@ function Login() {
       login({ user, session });
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || t('auth.loginError'));
+      if (isApiErrorCode(err, 'AUTH_INVALID_CREDENTIALS')) {
+        setError(t('auth.loginError'));
+      } else {
+        setError(err.message || t('auth.loginError'));
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -5,6 +5,7 @@ import { registerUser, loginUser } from '../../api/auth.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLocale } from '../../context/LocaleContext.jsx';
 import AuthFormLayout from './AuthFormLayout.jsx';
+import { isApiErrorCode } from '../../api/errorUtils.js';
 
 function Register() {
   const [email, setEmail] = useState('');
@@ -63,7 +64,7 @@ function Register() {
       });
     } catch (err) {
       const message = err.message || t('auth.registerErrorGeneric');
-      if (message.toLowerCase().includes('already')) {
+      if (isApiErrorCode(err, 'AUTH_EMAIL_EXISTS')) {
         setError(t('auth.registerErrorExisting'));
       } else {
         setError(message || t('auth.registerErrorGeneric'));

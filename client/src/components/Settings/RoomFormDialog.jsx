@@ -13,6 +13,7 @@ import {
   Select,
 } from '@mui/material';
 import { useLocale } from '../../context/LocaleContext.jsx';
+import { isApiErrorCode } from '../../api/errorUtils.js';
 
 const EMPTY_FORM = {
   property_id: '',
@@ -79,7 +80,7 @@ export default function RoomFormDialog({
       });
       onClose();
     } catch (err) {
-      if (err?.message === 'Room name must be unique within this property.') {
+      if (isApiErrorCode(err, 'ROOM_NAME_NOT_UNIQUE')) {
         setNameError(t('roomForm.errors.uniqueName'));
         setError(null);
       } else {

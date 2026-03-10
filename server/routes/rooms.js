@@ -8,6 +8,7 @@ import { validateRoomPayload } from '../validators/roomValidator.js';
 
 const router = Router();
 const ROOM_UNIQUE_NAME_ERROR = 'Room name must be unique within this property.';
+const ROOM_UNIQUE_NAME_CODE = 'ROOM_NAME_NOT_UNIQUE';
 
 router.use(requireAuth);
 
@@ -76,7 +77,7 @@ router.post(
 
     if (error) {
       if (isRoomNameUniqueViolation(error)) {
-        throw createHttpError(400, ROOM_UNIQUE_NAME_ERROR);
+        throw createHttpError(409, ROOM_UNIQUE_NAME_ERROR, null, ROOM_UNIQUE_NAME_CODE);
       }
       throw mapSupabaseError(error);
     }
@@ -127,7 +128,7 @@ router.put(
 
     if (error) {
       if (isRoomNameUniqueViolation(error)) {
-        throw createHttpError(400, ROOM_UNIQUE_NAME_ERROR);
+        throw createHttpError(409, ROOM_UNIQUE_NAME_ERROR, null, ROOM_UNIQUE_NAME_CODE);
       }
       throw mapSupabaseError(error, error.status === 406 ? 404 : error.status);
     }
@@ -207,7 +208,7 @@ async function ensureUniqueRoomNameWithinProperty({
   });
 
   if (conflict) {
-    throw createHttpError(400, ROOM_UNIQUE_NAME_ERROR);
+    throw createHttpError(409, ROOM_UNIQUE_NAME_ERROR, null, ROOM_UNIQUE_NAME_CODE);
   }
 }
 
