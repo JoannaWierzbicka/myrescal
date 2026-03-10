@@ -17,4 +17,14 @@ export const mapSupabaseError = (error, fallbackStatus = 500, fallbackMessage = 
     error?.status || fallbackStatus,
     error?.message || fallbackMessage,
     error?.details,
+    mapSupabaseCode(error),
   );
+
+function mapSupabaseCode(error) {
+  const code = error?.code;
+  if (code === '23P01') return 'RESERVATION_OVERLAP';
+  if (code === '23505') return 'DB_UNIQUE_VIOLATION';
+  if (code === '42501') return 'FORBIDDEN';
+  if (typeof code === 'string' && code.trim()) return `SUPABASE_${code.toUpperCase()}`;
+  return undefined;
+}

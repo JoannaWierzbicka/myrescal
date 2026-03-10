@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import 'dotenv/config';
+import { logger } from '../utils/logger.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
@@ -19,7 +20,10 @@ if (!supabaseServiceRoleKey) {
 }
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY && legacySupabaseKey && process.env.NODE_ENV !== 'production') {
-  console.warn('[env] SUPABASE_KEY is deprecated. Please switch to SUPABASE_SERVICE_ROLE_KEY.');
+  logger.warn('config.env.deprecated_supabase_key', {
+    variable: 'SUPABASE_KEY',
+    replacement: 'SUPABASE_SERVICE_ROLE_KEY',
+  });
 }
 
 const baseClientOptions = {

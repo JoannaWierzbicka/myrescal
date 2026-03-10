@@ -20,6 +20,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { FaSave, FaTimes } from 'react-icons/fa';
 import { useLocale } from '../context/LocaleContext.jsx';
+import { isApiErrorCode } from '../api/errorUtils.js';
 import {
   DEFAULT_RESERVATION_STATUS,
   RESERVATION_STATUS_OPTIONS,
@@ -469,7 +470,10 @@ function ReservationFormDialog({
     try {
       await onSubmit(toPayload(formValues));
     } catch (submissionError) {
-      if (submissionError?.status === 409) {
+      if (
+        isApiErrorCode(submissionError, 'RESERVATION_OVERLAP')
+        || submissionError?.status === 409
+      ) {
         setError(t('reservationForm.errors.conflict'));
       } else {
         setError(submissionError?.message || t('reservationForm.errors.generic'));
