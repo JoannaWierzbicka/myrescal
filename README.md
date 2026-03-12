@@ -87,22 +87,31 @@ Skrypty:
 
 Wymagania:
 - ustawiony `DATABASE_URL` (connection string do Postgresa)
-- dostępne binarki `pg_dump` i `psql`
+- dostępne binarki `pg_dump`, `psql`, `gzip`
 
 Backup:
 ```bash
 export DATABASE_URL='postgresql://...'
 ./scripts/backup.sh
 ```
-Plik backupu zostanie zapisany w `backups/backup_YYYYmmdd_HHMMSS.sql.gz`.
+Pliki backupu:
+- `backups/backup_YYYYmmdd_HHMMSS.sql.gz`
+- `backups/backup_YYYYmmdd_HHMMSS.sql.gz.sha256`
 
 Restore:
 ```bash
 export DATABASE_URL='postgresql://...'
 ./scripts/restore.sh backups/backup_YYYYmmdd_HHMMSS.sql.gz
 ```
+Tryb bez promptu (np. CI):
+```bash
+FORCE_RESTORE=1 ./scripts/restore.sh --yes backups/backup_YYYYmmdd_HHMMSS.sql.gz
+```
 
 Ostrzeżenia:
 - restore nadpisuje dane w docelowej bazie;
 - wykonuj restore najpierw na środowisku testowym;
 - przed restore do produkcji wykonaj świeży backup.
+
+Pełna procedura operacyjna i plan testów restore:
+- `docs/operational/backup-restore.md`
