@@ -22,7 +22,8 @@ alter table public.reservations
   add column if not exists status text default 'preliminary',
   add column if not exists notes text,
   add column if not exists nightly_rate numeric,
-  add column if not exists total_price numeric;
+  add column if not exists total_price numeric,
+  add column if not exists deposit_amount numeric;
 
 update public.reservations
   set status = coalesce(status, 'preliminary');
@@ -48,7 +49,7 @@ do $$
 begin
   alter table public.reservations
     add constraint reservations_status_check
-    check (status in ('preliminary', 'deposit_paid', 'confirmed', 'booking', 'past'));
+    check (status in ('preliminary', 'deposit_paid', 'booking', 'past'));
 exception
   when duplicate_object then null;
 end $$;
@@ -67,6 +68,15 @@ begin
   alter table public.reservations
     add constraint reservations_total_price_non_negative
     check (total_price is null or total_price >= 0);
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.reservations
+    add constraint reservations_deposit_amount_non_negative
+    check (deposit_amount is null or deposit_amount >= 0);
 exception
   when duplicate_object then null;
 end $$;

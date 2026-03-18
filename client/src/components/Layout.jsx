@@ -16,8 +16,10 @@ import { useGlobalError } from '../context/ErrorContext.jsx';
 
 const WAKEUP_NOTICE_DELAY_MS = 4000;
 const SLOW_NOTICE_DELAY_MS = 60000;
-const WAKEUP_NOTICE_TEXT = 'Serwer się wybudza (darmowy hosting). To może potrwać do ~60s.';
-const SLOW_NOTICE_TEXT = 'To trwa dłużej niż zwykle. Spróbuj odświeżyć lub ponowić.';
+const NETWORK_NOTICE_KEYS = {
+  wakeup: 'layout.networkNotice.wakeup',
+  slow: 'layout.networkNotice.slow',
+};
 
 export default function Layout() {
   const location = useLocation();
@@ -89,10 +91,10 @@ export default function Layout() {
     if (isNetworkActive && !wasNetworkActive) {
       setNetworkNotice('');
       networkTimersRef.current.wakeup = setTimeout(() => {
-        setNetworkNotice(WAKEUP_NOTICE_TEXT);
+        setNetworkNotice('wakeup');
       }, WAKEUP_NOTICE_DELAY_MS);
       networkTimersRef.current.slow = setTimeout(() => {
-        setNetworkNotice(SLOW_NOTICE_TEXT);
+        setNetworkNotice('slow');
       }, SLOW_NOTICE_DELAY_MS);
     }
 
@@ -198,8 +200,8 @@ export default function Layout() {
         sx={{ top: { xs: 72, sm: 84, md: 96 } }}
       >
         {networkNotice ? (
-          <Alert severity={networkNotice === SLOW_NOTICE_TEXT ? 'warning' : 'info'} sx={{ width: '100%' }}>
-            {networkNotice}
+          <Alert severity={networkNotice === 'slow' ? 'warning' : 'info'} sx={{ width: '100%' }}>
+            {t(NETWORK_NOTICE_KEYS[networkNotice])}
           </Alert>
         ) : null}
       </Snackbar>
@@ -215,7 +217,7 @@ export default function Layout() {
             action={
               retryCallback ? (
                 <Button color="inherit" size="small" onClick={handleRetry}>
-                  Spróbuj ponownie
+                  {t('common.retry')}
                 </Button>
               ) : null
             }

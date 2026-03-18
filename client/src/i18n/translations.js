@@ -26,6 +26,12 @@ export const translations = {
     footer: {
       copyright: '© {{year}} MyResCal',
     },
+    layout: {
+      networkNotice: {
+        wakeup: 'The server is waking up. This can take up to ~60s.',
+        slow: 'This is taking longer than usual. Try refreshing or retrying.',
+      },
+    },
     loader: {
       preparing: 'Preparing your stays...',
     },
@@ -94,7 +100,6 @@ export const translations = {
     reservationStatus: {
       preliminary: 'Preliminary',
       depositPaid: 'Deposit paid',
-      confirmed: 'Confirmed',
       booking: 'Booking.com',
       past: 'Past',
     },
@@ -139,9 +144,10 @@ export const translations = {
         endDate: 'End Date',
         property: 'Property',
         room: 'Room',
-        price: 'Price (PLN)',
         nightlyRate: 'Nightly rate (PLN)',
         totalPrice: 'Total stay price (PLN)',
+        depositAmount: 'Deposit (PLN)',
+        remainingAmount: 'Remaining to pay (PLN)',
         notes: 'Notes',
         adults: 'Adults',
         children: 'Children',
@@ -160,8 +166,9 @@ export const translations = {
         invalidPhone: 'Invalid phone number.',
         invalidNightlyRate: 'Nightly rate must be a valid number.',
         negativeNightlyRate: 'Nightly rate must be greater than or equal to 0.',
-        invalidTotalPrice: 'Total price must be a valid number.',
-        negativeTotalPrice: 'Total price must be greater than or equal to 0.',
+        invalidDepositAmount: 'Deposit must be a valid number.',
+        negativeDepositAmount: 'Deposit must be greater than or equal to 0.',
+        depositGreaterThanTotal: 'Deposit cannot be greater than the total price.',
         notesTooLong: 'Notes can contain up to {{max}} characters.',
         generic: 'We were unable to save the reservation. Please try again.',
         conflict: 'Selected room is already booked for the chosen dates.',
@@ -237,6 +244,7 @@ export const translations = {
       children: 'Children',
       confirm: 'Are you sure?',
       notSet: 'Not set',
+      retry: 'Retry',
     },
   },
   pl: {
@@ -265,6 +273,12 @@ export const translations = {
     },
     footer: {
       copyright: '© {{year}} MyResCal',
+    },
+    layout: {
+      networkNotice: {
+        wakeup: 'Serwer się wybudza. To może potrwać do ~60s.',
+        slow: 'To trwa dłużej niż zwykle. Spróbuj odświeżyć lub ponowić.',
+      },
     },
     loader: {
       preparing: 'Przygotowujemy Twoje rezerwacje...',
@@ -334,7 +348,6 @@ export const translations = {
     reservationStatus: {
       preliminary: 'Rezerwacja wstępna',
       depositPaid: 'Zaliczka opłacona',
-      confirmed: 'Rezerwacja potwierdzona',
       booking: 'Rezerwacja z Booking.com',
       past: 'Rezerwacja przeszła',
     },
@@ -379,9 +392,10 @@ export const translations = {
         endDate: 'Data zakończenia',
         property: 'Obiekt',
         room: 'Pokój',
-        price: 'Cena (PLN)',
         nightlyRate: 'Cena za dobę (PLN)',
         totalPrice: 'Cena za pobyt (PLN)',
+        depositAmount: 'Zaliczka (PLN)',
+        remainingAmount: 'Pozostało do zapłaty (PLN)',
         notes: 'Uwagi',
         adults: 'Dorośli',
         children: 'Dzieci',
@@ -400,8 +414,9 @@ export const translations = {
         invalidPhone: 'Nieprawidłowy numer telefonu.',
         invalidNightlyRate: 'Cena za dobę musi być poprawną liczbą.',
         negativeNightlyRate: 'Cena za dobę musi być większa lub równa 0.',
-        invalidTotalPrice: 'Cena za pobyt musi być poprawną liczbą.',
-        negativeTotalPrice: 'Cena za pobyt musi być większa lub równa 0.',
+        invalidDepositAmount: 'Zaliczka musi być poprawną liczbą.',
+        negativeDepositAmount: 'Zaliczka musi być większa lub równa 0.',
+        depositGreaterThanTotal: 'Zaliczka nie może być większa niż cena za pobyt.',
         notesTooLong: 'Uwagi mogą mieć maksymalnie {{max}} znaków.',
         generic: 'Nie udało się zapisać rezerwacji. Spróbuj ponownie.',
         conflict: 'Wybrany pokój jest już zajęty w podanym terminie.',
@@ -477,6 +492,7 @@ export const translations = {
       children: 'Dzieci',
       confirm: 'Czy na pewno?',
       notSet: 'Brak',
+      retry: 'Spróbuj ponownie',
     },
   },
 };

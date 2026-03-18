@@ -24,6 +24,7 @@ import { isApiErrorCode } from '../api/errorUtils.js';
 import {
   DEFAULT_RESERVATION_STATUS,
   RESERVATION_STATUS_OPTIONS,
+  RESERVATION_STATUS_META,
 } from '../utils/reservationStatus.js';
 
 const DEFAULT_FORM_VALUES = {
@@ -36,7 +37,7 @@ const DEFAULT_FORM_VALUES = {
   property_id: '',
   room_id: '',
   nightly_rate: '',
-  total_price: '',
+  deposit_amount: '',
   notes: '',
   adults: '',
   children: '',
@@ -63,9 +64,9 @@ const parseDecimalInput = (value) => {
   return Number.isFinite(parsed) ? parsed : Number.NaN;
 };
 
-const formatDecimalForInput = (value) => {
+const formatDecimalForInput = (value, maximumFractionDigits = 2) => {
   if (!Number.isFinite(value)) return '';
-  return String(Number(value.toFixed(2)));
+  return String(Number(value.toFixed(maximumFractionDigits)));
 };
 
 const normalizeString = (value) => {
@@ -77,6 +78,12 @@ const normalizeString = (value) => {
 const normalizeDecimalForPayload = (value) => {
   const parsed = parseDecimalInput(value);
   if (parsed === null || Number.isNaN(parsed)) return null;
+  return parsed;
+};
+
+const resolveSafeAmount = (value) => {
+  const parsed = parseDecimalInput(value);
+  if (parsed === null || Number.isNaN(parsed)) return 0;
   return parsed;
 };
 
@@ -130,12 +137,10 @@ const computeAutomaticTotalPrice = (values) => {
   return formatDecimalForInput(nightlyRate * nights);
 };
 
-const hasValue = (value) => value !== undefined && value !== null && String(value).trim() !== '';
+const computeRemainingAmount = (totalPrice, depositAmount) =>
+  formatDecimalForInput(resolveSafeAmount(totalPrice) - resolveSafeAmount(depositAmount));
 
-const hasManualTotalPrice = (values = {}) => {
-  if (hasValue(values.total_price)) return true;
-  return !hasValue(values.total_price) && hasValue(values.price);
-};
+const hasValue = (value) => value !== undefined && value !== null && String(value).trim() !== '';
 
 const isValidEmail = (value) => {
   const normalized = String(value || '').trim();
@@ -165,18 +170,50 @@ const validateDecimalField = (value, t, invalidKey, negativeKey) => {
   return null;
 };
 
+const resolveStoredTotalPrice = (values = {}) => {
+  const totalPrice = parseDecimalInput(values.total_price);
+  if (totalPrice !== null && !Number.isNaN(totalPrice)) {
+    return totalPrice;
+  }
+
+  const legacyPrice = parseDecimalInput(values.price);
+  if (legacyPrice !== null && !Number.isNaN(legacyPrice)) {
+    return legacyPrice;
+  }
+
+  return null;
+};
+
+const deriveNightlyRateFromStoredTotal = (values = {}) => {
+  const nights = calculateNumberOfNights(values.start_date, values.end_date);
+  const storedTotalPrice = resolveStoredTotalPrice(values);
+
+  if (!nights || storedTotalPrice === null) {
+    return '';
+  }
+
+  return formatDecimalForInput(storedTotalPrice / nights, 4);
+};
+
+const normalizeReservationStatus = (status) => {
+  const normalized = String(status || '').trim();
+  if (!normalized || !Object.prototype.hasOwnProperty.call(RESERVATION_STATUS_META, normalized)) {
+    return DEFAULT_RESERVATION_STATUS;
+  }
+  return normalized;
+};
+
 const toFormValues = (values = {}) => {
   const mapped = { ...DEFAULT_FORM_VALUES };
 
   Object.entries(values).forEach(([key, value]) => {
     if (value === null || value === undefined) return;
 
-    if (key === 'price' && !hasValue(values.total_price)) {
-      mapped.total_price = String(value);
+    if (['price', 'remaining_amount', 'total_price'].includes(key)) {
       return;
     }
 
-    if (['adults', 'children', 'nightly_rate', 'total_price'].includes(key)) {
+    if (['adults', 'children', 'nightly_rate', 'deposit_amount'].includes(key)) {
       mapped[key] = String(value);
       return;
     }
@@ -186,13 +223,22 @@ const toFormValues = (values = {}) => {
       return;
     }
 
+    if (key === 'status') {
+      mapped.status = normalizeReservationStatus(value);
+      return;
+    }
+
     mapped[key] = value;
   });
+
+  if (!hasValue(mapped.nightly_rate)) {
+    mapped.nightly_rate = deriveNightlyRateFromStoredTotal(values);
+  }
 
   return mapped;
 };
 
-const toPayload = (values) => {
+const toPayload = (values, totalPrice) => {
   const normalizeNumber = (value) => {
     if (value === undefined || value === null || value === '') return null;
     return Number(value);
@@ -208,7 +254,11 @@ const toPayload = (values) => {
     property_id: values.property_id || null,
     room_id: values.room_id || null,
     nightly_rate: normalizeDecimalForPayload(values.nightly_rate),
-    total_price: normalizeDecimalForPayload(values.total_price),
+    total_price: normalizeDecimalForPayload(totalPrice),
+    deposit_amount:
+      values.status === 'deposit_paid'
+        ? normalizeDecimalForPayload(values.deposit_amount) ?? 0
+        : null,
     notes: normalizeString(values.notes),
     adults: normalizeNumber(values.adults),
     children: normalizeNumber(values.children),
@@ -228,7 +278,7 @@ const validateForm = (values, t, derivedErrors) => {
   if (derivedErrors.email) return derivedErrors.email;
   if (derivedErrors.phone) return derivedErrors.phone;
   if (derivedErrors.nightlyRate) return derivedErrors.nightlyRate;
-  if (derivedErrors.totalPrice) return derivedErrors.totalPrice;
+  if (derivedErrors.depositAmount) return derivedErrors.depositAmount;
   if (derivedErrors.notes) return derivedErrors.notes;
 
   const nights = calculateNumberOfNights(values.start_date, values.end_date);
@@ -260,28 +310,15 @@ function ReservationFormDialog({
   const [formValues, setFormValues] = useState(() => toFormValues(initialValues));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [isTotalPriceManual, setIsTotalPriceManual] = useState(() => hasManualTotalPrice(initialValues));
   const isMountedRef = useRef(true);
+  const isDepositPaid = formValues.status === 'deposit_paid';
 
   useEffect(() => () => {
     isMountedRef.current = false;
   }, []);
 
   useEffect(() => {
-    const nextValues = toFormValues(initialValues);
-    const manualTotal = hasManualTotalPrice(initialValues);
-    setIsTotalPriceManual(manualTotal);
-
-    setFormValues(() => {
-      if (manualTotal) {
-        return nextValues;
-      }
-
-      return {
-        ...nextValues,
-        total_price: computeAutomaticTotalPrice(nextValues),
-      };
-    });
+    setFormValues(toFormValues(initialValues));
   }, [initialValues]);
 
   useEffect(() => {
@@ -318,16 +355,37 @@ function ReservationFormDialog({
     [formValues.nightly_rate, t],
   );
 
-  const totalPriceErrorText = useMemo(
-    () =>
-      validateDecimalField(
-        formValues.total_price,
-        t,
-        'reservationForm.errors.invalidTotalPrice',
-        'reservationForm.errors.negativeTotalPrice',
-      ),
-    [formValues.total_price, t],
+  const computedTotalPrice = useMemo(
+    () => computeAutomaticTotalPrice(formValues),
+    [formValues.end_date, formValues.nightly_rate, formValues.start_date],
   );
+
+  const remainingAmount = useMemo(
+    () => computeRemainingAmount(computedTotalPrice, formValues.deposit_amount),
+    [computedTotalPrice, formValues.deposit_amount],
+  );
+
+  const depositAmountErrorText = useMemo(() => {
+    if (!isDepositPaid) return null;
+
+    const baseError = validateDecimalField(
+      formValues.deposit_amount,
+      t,
+      'reservationForm.errors.invalidDepositAmount',
+      'reservationForm.errors.negativeDepositAmount',
+    );
+
+    if (baseError) return baseError;
+
+    const depositAmount = resolveSafeAmount(formValues.deposit_amount);
+    const totalPrice = resolveSafeAmount(computedTotalPrice);
+
+    if (depositAmount > totalPrice) {
+      return t('reservationForm.errors.depositGreaterThanTotal');
+    }
+
+    return null;
+  }, [computedTotalPrice, formValues.deposit_amount, isDepositPaid, t]);
 
   const notesErrorText = useMemo(() => {
     if (!formValues.notes) return null;
@@ -343,7 +401,7 @@ function ReservationFormDialog({
         email: emailErrorText,
         phone: phoneErrorText,
         nightlyRate: nightlyRateErrorText,
-        totalPrice: totalPriceErrorText,
+        depositAmount: depositAmountErrorText,
         notes: notesErrorText,
       }),
     [
@@ -352,7 +410,7 @@ function ReservationFormDialog({
       emailErrorText,
       phoneErrorText,
       nightlyRateErrorText,
-      totalPriceErrorText,
+      depositAmountErrorText,
       notesErrorText,
     ],
   );
@@ -407,42 +465,10 @@ function ReservationFormDialog({
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-
-    if (name === 'total_price') {
-      const cleared = !hasValue(value);
-
-      if (cleared) {
-        setIsTotalPriceManual(false);
-        setFormValues((prev) => {
-          const nextValues = { ...prev, total_price: '' };
-          return {
-            ...nextValues,
-            total_price: computeAutomaticTotalPrice(nextValues),
-          };
-        });
-        return;
-      }
-
-      setIsTotalPriceManual(true);
-      setFormValues((prev) => ({
-        ...prev,
-        total_price: value,
-      }));
-      return;
-    }
-
-    setFormValues((prev) => {
-      const nextValues = {
-        ...prev,
-        [name]: value,
-      };
-
-      if (!isTotalPriceManual && ['nightly_rate', 'start_date', 'end_date'].includes(name)) {
-        nextValues.total_price = computeAutomaticTotalPrice(nextValues);
-      }
-
-      return nextValues;
-    });
+    setFormValues((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleDialogClose = (_event, reason) => {
@@ -468,7 +494,7 @@ function ReservationFormDialog({
     setIsSubmitting(true);
     setError(null);
     try {
-      await onSubmit(toPayload(formValues));
+      await onSubmit(toPayload(formValues, computedTotalPrice));
     } catch (submissionError) {
       if (
         isApiErrorCode(submissionError, 'RESERVATION_OVERLAP')
@@ -662,12 +688,11 @@ function ReservationFormDialog({
                   label={t('reservationForm.fields.totalPrice')}
                   name="total_price"
                   type="text"
-                  value={formValues.total_price}
-                  onChange={handleChange}
+                  value={computedTotalPrice}
                   fullWidth
                   inputProps={{ inputMode: 'decimal' }}
-                  error={Boolean(totalPriceErrorText)}
-                  helperText={totalPriceErrorText || ' '}
+                  InputProps={{ readOnly: true }}
+                  helperText=" "
                 />
               </Grid>
             </Grid>
@@ -691,6 +716,36 @@ function ReservationFormDialog({
                 ))}
               </Select>
             </FormControl>
+
+            {isDepositPaid ? (
+              <Grid container spacing={2.5} sx={{ mt: { xs: 2, sm: 2.5 } }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label={t('reservationForm.fields.depositAmount')}
+                    name="deposit_amount"
+                    type="text"
+                    value={formValues.deposit_amount}
+                    onChange={handleChange}
+                    fullWidth
+                    inputProps={{ inputMode: 'decimal' }}
+                    error={Boolean(depositAmountErrorText)}
+                    helperText={depositAmountErrorText || ' '}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label={t('reservationForm.fields.remainingAmount')}
+                    name="remaining_amount"
+                    type="text"
+                    value={remainingAmount}
+                    fullWidth
+                    inputProps={{ inputMode: 'decimal' }}
+                    InputProps={{ readOnly: true }}
+                    helperText=" "
+                  />
+                </Grid>
+              </Grid>
+            ) : null}
           </Box>
 
           <Box

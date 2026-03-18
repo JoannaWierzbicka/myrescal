@@ -108,6 +108,7 @@ router.post(
     const supabase = getSupabaseUser(req.accessToken);
     const numberOfNights = calculateNumberOfNights(reservation.start_date, reservation.end_date);
     const totalPrice = resolveTotalPrice(reservation, numberOfNights);
+    const depositAmount = resolveDepositAmount(reservation, totalPrice);
 
     const { property, room } = await ensureOwnership(
       supabase,
@@ -134,6 +135,7 @@ router.post(
     const insertPayload = {
       ...reservation,
       total_price: totalPrice,
+      deposit_amount: depositAmount,
       property_id: property.id,
       room_id: room.id,
       owner_id: ownerId,
@@ -180,6 +182,7 @@ router.put(
     const reservation = validateReservationPayload(req.body);
     const numberOfNights = calculateNumberOfNights(reservation.start_date, reservation.end_date);
     const totalPrice = resolveTotalPrice(reservation, numberOfNights);
+    const depositAmount = resolveDepositAmount(reservation, totalPrice);
 
     const { property, room } = await ensureOwnership(
       supabase,
@@ -207,6 +210,7 @@ router.put(
     const updatePayload = {
       ...reservation,
       total_price: totalPrice,
+      deposit_amount: depositAmount,
       property_id: property.id,
       room_id: room.id,
     };
@@ -463,13 +467,28 @@ function calculateNumberOfNights(startDate, endDate) {
 }
 
 function resolveTotalPrice(reservation, numberOfNights) {
+  if (reservation.nightly_rate !== null && reservation.nightly_rate !== undefined) {
+    return Number((reservation.nightly_rate * numberOfNights).toFixed(2));
+  }
+
   if (reservation.total_price !== null && reservation.total_price !== undefined) {
     return reservation.total_price;
   }
 
-  if (reservation.nightly_rate === null || reservation.nightly_rate === undefined) {
+  return null;
+}
+
+function resolveDepositAmount(reservation, totalPrice) {
+  if (reservation.status !== 'deposit_paid') {
     return null;
   }
 
-  return Number((reservation.nightly_rate * numberOfNights).toFixed(2));
+  const depositAmount = reservation.deposit_amount ?? 0;
+  const comparableTotalPrice = totalPrice ?? 0;
+
+  if (depositAmount > comparableTotalPrice) {
+    throw createHttpError(400, 'Field "deposit_amount" cannot be greater than "total_price".');
+  }
+
+  return depositAmount;
 }
