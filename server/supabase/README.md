@@ -6,6 +6,7 @@ Uruchamiaj pliki SQL w Supabase SQL Editor (schema `public`) w tej kolejności:
 2. `reservations_rls.sql`
 3. `reservations_notes_pricing.sql`
 4. `reservations_no_overlap.sql` (najpierw sprawdź typy kolumn i wybierz właściwy wariant)
+5. `remove_confirmed_status.sql` (jeśli baza ma jeszcze stare rekordy/statusy `confirmed`)
 
 ---
 
@@ -34,12 +35,16 @@ where table_schema='public' and table_name='reservations' and column_name in ('s
   - ustawia politykę owner-based (`auth.uid() = owner_id`) dla wszystkich operacji.
 
 - `reservations_notes_pricing.sql`:
-  - dodaje pola `notes`, `nightly_rate`, `total_price`;
+  - dodaje pola `notes`, `nightly_rate`, `total_price`, `deposit_amount`;
   - utrzymuje zgodność wsteczną dla legacy `price`.
 
 - `reservations_no_overlap.sql`:
   - dodaje extension `btree_gist`;
   - definiuje exclusion constraint `reservations_no_overlap`, blokujący nakładające się rezerwacje dla tego samego `room_id`.
+
+- `remove_confirmed_status.sql`:
+  - zamienia stare `confirmed` na `preliminary`;
+  - odtwarza constraint statusów bez `confirmed`.
 
 ---
 

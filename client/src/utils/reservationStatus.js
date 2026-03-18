@@ -11,11 +11,6 @@ export const RESERVATION_STATUS_META = {
     background: 'rgba(33, 111, 177, 0.35)',
     color: '#0E406C',
   },
-  confirmed: {
-    labelKey: 'reservationStatus.confirmed',
-    background: 'rgba(77, 171, 125, 0.35)',
-    color: '#1E5E3A',
-  },
   booking: {
     labelKey: 'reservationStatus.booking',
     background: 'rgba(51, 180, 172, 0.18)',

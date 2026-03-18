@@ -3,7 +3,6 @@ import { createHttpError } from '../utils/httpError.js';
 export const RESERVATION_STATUSES = Object.freeze([
   'preliminary',
   'deposit_paid',
-  'confirmed',
   'booking',
   'past',
 ]);
@@ -114,6 +113,7 @@ export const validateReservationPayload = (payload) => {
   const legacyPrice = normalizeNonNegativeNumber(payload.price, 'price');
   const nightlyRate = normalizeNonNegativeNumber(payload.nightly_rate, 'nightly_rate');
   const totalPrice = normalizeNonNegativeNumber(payload.total_price, 'total_price');
+  const depositAmount = normalizeNonNegativeNumber(payload.deposit_amount, 'deposit_amount');
 
   const result = {
     name: String(payload.name).trim(),
@@ -126,6 +126,7 @@ export const validateReservationPayload = (payload) => {
     room_id: String(payload.room_id),
     nightly_rate: nightlyRate,
     total_price: totalPrice ?? legacyPrice,
+    deposit_amount: depositAmount,
     adults: normalizeNonNegativeNumber(payload.adults, 'adults'),
     children: normalizeNonNegativeNumber(payload.children, 'children'),
     notes: normalizeNotes(payload.notes),
