@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormHelperText,
   Grid,
   IconButton,
   InputLabel,
@@ -49,6 +50,7 @@ const CHILDREN_OPTIONS = Array.from({ length: 7 }, (_, index) => String(index));
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_INPUT_REGEX = /^\+?[\d\s\-()]{6,25}$/;
 const MAX_NOTES_LENGTH = 1000;
+const STAY_DETAILS_ROW_MARGIN = { xs: 2, sm: 2.5 };
 
 const parseDecimalInput = (value) => {
   if (value === undefined || value === null) return null;
@@ -625,7 +627,7 @@ function ReservationFormDialog({
               />
             </Stack>
 
-            <Stack spacing={2.5} direction={{ xs: 'column', sm: 'row' }} sx={{ mt: { xs: 2, sm: 2.5 } }}>
+            <Stack spacing={2.5} direction={{ xs: 'column', sm: 'row' }} sx={{ mt: STAY_DETAILS_ROW_MARGIN }}>
               <FormControl required fullWidth disabled={loadingProperties || (properties?.length ?? 0) === 0}>
                 <InputLabel id="property-label">{t('reservationForm.fields.property')}</InputLabel>
                 <Select
@@ -648,6 +650,7 @@ function ReservationFormDialog({
                     </MenuItem>
                   ))}
                 </Select>
+                <FormHelperText> </FormHelperText>
               </FormControl>
 
               <FormControl required fullWidth>
@@ -666,10 +669,11 @@ function ReservationFormDialog({
                     </MenuItem>
                   ))}
                 </Select>
+                <FormHelperText> </FormHelperText>
               </FormControl>
             </Stack>
 
-            <Grid container spacing={2.5} sx={{ mt: { xs: 0.5, sm: 1 } }}>
+            <Grid container spacing={2.5} sx={{ mt: STAY_DETAILS_ROW_MARGIN }}>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label={t('reservationForm.fields.nightlyRate')}
@@ -697,7 +701,7 @@ function ReservationFormDialog({
               </Grid>
             </Grid>
 
-            <FormControl required fullWidth sx={{ mt: { xs: 2, sm: 2.5 } }}>
+            <FormControl required fullWidth sx={{ mt: STAY_DETAILS_ROW_MARGIN }}>
               <InputLabel id="reservation-status-label">{t('reservationForm.fields.status')}</InputLabel>
               <Select
                 labelId="reservation-status-label"
