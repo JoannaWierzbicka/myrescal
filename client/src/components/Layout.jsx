@@ -13,6 +13,7 @@ import {
 import { useLocale } from '../context/LocaleContext.jsx';
 import { getPendingCount, subscribeToNetworkActivity } from '../api/client.js';
 import { useGlobalError } from '../context/ErrorContext.jsx';
+import { useAndroidBackButton } from '../mobile/useAndroidBackButton.js';
 
 const WAKEUP_NOTICE_DELAY_MS = 4000;
 const SLOW_NOTICE_DELAY_MS = 60000;
@@ -33,6 +34,8 @@ export default function Layout() {
   const { errorMessage, retryCallback, clearError } = useGlobalError();
   const hasGlobalError = Boolean(errorMessage);
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+
+  useAndroidBackButton();
 
   const clearNetworkTimers = useCallback(() => {
     if (networkTimersRef.current.wakeup) {

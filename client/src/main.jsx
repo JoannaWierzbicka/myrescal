@@ -9,6 +9,9 @@ import router from './router/router.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { ErrorProvider } from './context/ErrorContext.jsx';
 import { LocaleProvider } from './context/LocaleContext.jsx';
+import { configureCapacitorRuntime } from './mobile/capacitorRuntime.js';
+
+configureCapacitorRuntime();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
