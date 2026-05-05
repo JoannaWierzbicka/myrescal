@@ -204,16 +204,16 @@ export default function Settings() {
 
       <Stack
         direction={{ xs: 'column', lg: 'row' }}
-        spacing={{ xs: 3, lg: 4 }}
+        spacing={{ xs: 2, lg: 3 }}
         alignItems="stretch"
       >
         <Card
           sx={{
             flex: { xs: '1 1 100%', lg: '1 1 40%' },
             minWidth: { xs: '100%', lg: 0 },
-            borderRadius: '12px',
-            px: { xs: 3, sm: 4, lg: 4.5 },
-            py: { xs: 3.2, sm: 3.8, lg: 4.2 },
+            borderRadius: 1.5,
+            px: { xs: 2, sm: 3, lg: 4 },
+            py: { xs: 2.4, sm: 3, lg: 3.5 },
           }}
         >
           <CardContent
@@ -292,11 +292,12 @@ export default function Settings() {
                         selected={property.id === selectedPropertyId}
                         onClick={() => setSelectedPropertyId(property.id)}
                         sx={{
-                          borderRadius: '12px',
-                          px: { xs: 2.4, sm: 2.8 },
+                          borderRadius: '8px',
+                          px: { xs: 2, sm: 2.4 },
                           py: { xs: 1.4, sm: 1.6 },
                           '&.Mui-selected': {
-                            backgroundColor: 'rgba(51, 180, 172, 0.14)',
+                            backgroundColor: 'success.light',
+                            color: 'primary.main',
                           },
                         }}
                       >
@@ -323,9 +324,9 @@ export default function Settings() {
           sx={{
             flex: { xs: '1 1 100%', lg: '1 1 60%' },
             minWidth: { xs: '100%', lg: 0 },
-            borderRadius: '12px',
-            px: { xs: 3, sm: 4, lg: 4.5 },
-            py: { xs: 3.2, sm: 3.8, lg: 4.2 },
+            borderRadius: 1.5,
+            px: { xs: 2, sm: 3, lg: 4 },
+            py: { xs: 2.4, sm: 3, lg: 3.5 },
           }}
         >
           <CardContent
@@ -388,9 +389,9 @@ export default function Settings() {
                       sx={{
                         px: { xs: 2.4, sm: 2.8 },
                         py: { xs: 1.2, sm: 1.4 },
-                        borderRadius: '12px',
+                        borderRadius: '8px',
                         '&:hover': {
-                          backgroundColor: 'rgba(51, 180, 172, 0.08)',
+                          backgroundColor: 'success.light',
                         },
                       }}
                       secondaryAction={
@@ -423,7 +424,7 @@ export default function Settings() {
                     {index < rooms.length - 1 && (
                       <Divider
                         component="li"
-                        sx={{ mx: { xs: 2.4, sm: 2.8 }, borderColor: 'rgba(195, 111, 43, 0.2)' }}
+                        sx={{ mx: { xs: 2.4, sm: 2.8 }, borderColor: 'divider' }}
                       />
                     )}
                   </Box>

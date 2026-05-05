@@ -134,15 +134,13 @@ function ReservationList({
           alignItems: { xs: 'stretch', sm: 'center' },
           flexDirection: { xs: 'column', sm: 'row' },
           gap: 2,
-          mb: 3,
-          p: { xs: 2.4, sm: 3, md: 0 },
-          borderRadius: { xs: '12px', md: 0 },
-          border: { xs: '1px solid rgba(195, 111, 43, 0.25)', md: 'none' },
-          backgroundColor: { xs: 'rgba(251, 247, 240, 0.95)', md: 'transparent' },
-          boxShadow: {
-            xs: '0 18px 40px rgba(25, 41, 49, 0.12)',
-            md: 'none',
-          },
+          mb: 2.5,
+          p: { xs: 2, sm: 2.5, md: 0 },
+          borderRadius: { xs: 1.5, md: 0 },
+          border: { xs: '1px solid', md: 'none' },
+          borderColor: { xs: 'divider', md: 'transparent' },
+          backgroundColor: { xs: '#FFFFFF', md: 'transparent' },
+          boxShadow: { xs: '0 16px 34px rgba(16, 42, 51, 0.07)', md: 'none' },
         }}
       >
         {showHeader && (
@@ -151,9 +149,8 @@ function ReservationList({
               variant="h4"
               component="h2"
               sx={{
-                fontSize: { xs: '1.8rem', sm: '2rem' },
-                letterSpacing: '0.12rem',
-                textTransform: 'uppercase',
+                fontSize: { xs: '1.45rem', sm: '1.7rem' },
+                color: 'primary.dark',
               }}
             >
               {t('reservationList.title')}
@@ -168,15 +165,12 @@ function ReservationList({
           alignItems={{ xs: 'stretch', lg: 'center' }}
           sx={{
             width: { xs: '100%', sm: 'auto' },
-            backgroundColor: { xs: 'transparent', sm: 'rgba(251, 247, 240, 0.92)' },
-            borderRadius: { xs: 0, sm: '12px' },
-            border: { xs: 'none', sm: '1px solid rgba(195, 111, 43, 0.3)' },
-            boxShadow: {
-              xs: 'none',
-              md: '0 18px 40px rgba(25, 41, 49, 0.16)',
-            },
-            px: { xs: 0, sm: 2.4, md: 3 },
-            py: { xs: 0, sm: 1.8, md: 1.8 },
+            backgroundColor: 'transparent',
+            borderRadius: 0,
+            border: 'none',
+            boxShadow: 'none',
+            px: 0,
+            py: 0,
           }}
         >
           {hasRoomFilter && (
@@ -252,8 +246,9 @@ function ReservationList({
       {sortedReservations.length === 0 ? (
         <Card
           sx={{
-            background: 'linear-gradient(135deg, rgba(251, 245, 234, 0.94), rgba(233, 220, 198, 0.9))',
-            border: '2px dashed rgba(195, 111, 43, 0.35)',
+            background: '#FFFFFF',
+            border: '1px dashed',
+            borderColor: 'divider',
             textAlign: 'center',
           }}
         >
@@ -285,10 +280,10 @@ function ReservationList({
           sx={(theme) => ({
             display: 'grid',
             width: '100%',
-            maxWidth: `${CARD_MAX_WIDTH * 3 + GRID_GAP_PX * 2}px`,
+            maxWidth: { xs: '100%', md: `${CARD_MAX_WIDTH * 3 + GRID_GAP_PX * 2}px` },
             mx: 'auto',
-            px: { xs: 2, sm: 3 },
-            gridTemplateColumns: `minmax(0, ${CARD_MAX_WIDTH}px)`,
+            px: { xs: 0, sm: 1 },
+            gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: `minmax(0, ${CARD_MAX_WIDTH}px)` },
             [theme.breakpoints.between(700, 1199.95)]: {
               gridTemplateColumns: `repeat(2, minmax(${CARD_MIN_WIDTH}px, ${CARD_MAX_WIDTH}px))`,
             },

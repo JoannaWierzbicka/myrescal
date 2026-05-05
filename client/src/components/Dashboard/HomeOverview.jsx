@@ -25,7 +25,7 @@ import {
   updateReservation,
   deleteReservation,
 } from '../../api/reservations.js';
-import { addDays, startOfToday, isBefore } from 'date-fns';
+import { addDays, startOfToday, isBefore, isSameDay } from 'date-fns';
 import { useLocale } from '../../context/LocaleContext.jsx';
 
 const formatDateInput = (date) => format(date, 'yyyy-MM-dd');
@@ -149,6 +149,22 @@ export default function HomeOverview() {
       return reservationRoomId === roomFilterId;
     });
   }, [reservations, roomFilterId]);
+
+  const dashboardStats = useMemo(() => {
+    const today = startOfToday();
+    const arrivals = reservations.filter((reservation) => {
+      const date = reservation.start_date ? new Date(reservation.start_date) : null;
+      return date && !Number.isNaN(date.getTime()) && isSameDay(date, today);
+    }).length;
+    const departures = reservations.filter((reservation) => {
+      const date = reservation.end_date ? new Date(reservation.end_date) : null;
+      return date && !Number.isNaN(date.getTime()) && isSameDay(date, today);
+    }).length;
+    return [
+      { key: 'arrivals', label: t('dashboard.todayArrivals'), value: arrivals },
+      { key: 'departures', label: t('dashboard.todayDepartures'), value: departures },
+    ];
+  }, [reservations, t]);
 
   const [mobileActiveRoomId, setMobileActiveRoomId] = useState('');
 
@@ -310,9 +326,9 @@ export default function HomeOverview() {
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 3,
-          px: { xs: 1, sm: 1.5, md: 2 },
-          pt: { xs: 1, sm: 1.5, md: 2 },
+          gap: { xs: 2.5, md: 3 },
+          px: { xs: 0, sm: 1, md: 2 },
+          pt: { xs: 0.5, sm: 1.5, md: 2 },
           opacity: showLoaderOverlay ? 0.35 : 1,
           pointerEvents: showLoaderOverlay ? 'none' : 'auto',
           transition: 'opacity 0.3s ease',
@@ -321,11 +337,11 @@ export default function HomeOverview() {
       <Stack
         direction={{ xs: 'column', md: 'row' }}
         alignItems={{ xs: 'stretch', md: 'center' }}
-        spacing={{ xs: 2.5, md: 2 }}
+        spacing={{ xs: 1.75, md: 2 }}
         sx={{ flexWrap: { md: 'wrap' }, rowGap: { md: 2 } }}
       >
         <Box sx={{ flexGrow: 1 }}>
-          <Typography variant="h4" component="h1">
+          <Typography variant="h4" component="h1" sx={{ color: 'primary.dark', mb: 0.5 }}>
             {t('dashboard.title')}
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -338,7 +354,7 @@ export default function HomeOverview() {
           sx={{
             minWidth: { xs: '100%', sm: 260, md: 240 },
             maxWidth: { xs: '100%', md: 260 },
-            mb: { xs: 1.5, md: 0 }
+            mb: { xs: 0.5, md: 0 }
           }}
           disabled={loadingProperties || properties.length === 0}
         >
@@ -365,6 +381,36 @@ export default function HomeOverview() {
 
       </Stack>
 
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(2, minmax(0, 1fr))' },
+          gap: { xs: 1.25, md: 2 },
+          maxWidth: { md: 620 },
+        }}
+      >
+        {dashboardStats.map((stat) => (
+          <Box
+            key={stat.key}
+            sx={{
+              p: { xs: 2, md: 2.4 },
+              borderRadius: 1.5,
+              backgroundColor: '#FFFFFF',
+              border: '1px solid',
+              borderColor: 'divider',
+              boxShadow: '0 16px 34px rgba(16, 42, 51, 0.07)',
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+              {stat.label}
+            </Typography>
+            <Typography variant="h4" sx={{ color: 'primary.dark', fontSize: { xs: '1.65rem', md: '1.9rem' } }}>
+              {stat.value}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+
       {propertiesError && <Alert severity="error">{propertiesError}</Alert>}
 
       {!selectedPropertyId && !loadingProperties ? (
@@ -378,8 +424,8 @@ export default function HomeOverview() {
               direction={{ xs: 'column', sm: 'row' }}
               justifyContent="space-between"
               alignItems={{ xs: 'flex-start', sm: 'center' }}
-              spacing={{ xs: 2, sm: 0 }}
-              mb={2.5}
+              spacing={{ xs: 1.5, sm: 0 }}
+              mb={2}
             >
               <Typography variant="h6">
                 {`${t('dashboard.availability')} ${
@@ -397,12 +443,7 @@ export default function HomeOverview() {
                   })
                 }
                 sx={{
-                  width: { xs: 'auto', sm: 'auto' },
-                  px: { xs: 3.2, sm: 4 },
-                  py: { xs: 0.95, sm: 1.1 },
-                  letterSpacing: { xs: '0.16em', sm: '0.18em' },
-                  alignSelf: { xs: 'center', sm: 'flex-start' },
-                  mb: { xs: 3, sm: 0 },
+                  display: { xs: 'none', sm: 'inline-flex' },
                 }}
               >
                 {t('dashboard.addReservation')}
@@ -420,7 +461,19 @@ export default function HomeOverview() {
                     {roomsError || reservationsError}
                   </Alert>
                 )}
-                <Box sx={{ width: '100%', overflow: 'hidden', mt: { xs: 2, sm: 1.5 } }}>
+                <Box
+                  sx={{
+                    width: '100%',
+                    overflow: 'hidden',
+                    mt: { xs: 1.5, sm: 1.5 },
+                    p: { xs: 1.5, sm: 2 },
+                    borderRadius: 1.5,
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    boxShadow: '0 18px 42px rgba(16, 42, 51, 0.08)',
+                  }}
+                >
                   <ReservationCalendar
                     rooms={roomsForCalendar}
                     reservations={reservations}

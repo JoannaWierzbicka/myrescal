@@ -93,7 +93,7 @@ const ReservationCalendar = ({
 
   if (rooms.length === 0) {
     return (
-      <Box sx={{ p: 2, border: '1px dashed', borderColor: 'grey.300', borderRadius: '12px' }}>
+      <Box sx={{ p: 2, border: '1px dashed', borderColor: 'grey.300', borderRadius: '8px' }}>
         <Typography variant="body2" color="text.secondary">
           {t('calendar.noRooms')}
         </Typography>
@@ -143,7 +143,7 @@ const ReservationCalendar = ({
           borderLeft: '1px solid',
           borderTop: '1px solid',
           borderColor: 'grey.300',
-          borderRadius: '12px',
+          borderRadius: '8px',
           overflow: 'hidden',
           minWidth: '100%',
           position: 'relative',
@@ -425,33 +425,31 @@ const MonthlyCalendar = ({
   const resolvedRoomLabel = roomLabel || t('calendar.room');
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 1 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 0.5 }}>
       <Stack
-        direction={{ xs: 'column', sm: 'row' }}
+        direction="row"
         justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
-        spacing={{ xs: 1.5, sm: 0 }}
+        alignItems="center"
+        spacing={1}
       >
-        <Box display="flex" alignItems="center" gap={1}>
-          <IconButton onClick={() => onNavigate('prev')} size="small">
+        <IconButton onClick={() => onNavigate('prev')} size="small">
             <ArrowBackIos fontSize="inherit" />
-          </IconButton>
-          <Typography variant="h6">
+        </IconButton>
+        <Typography variant="h6" sx={{ color: 'primary.dark', textAlign: 'center' }}>
             {format(currentMonth, 'LLLL yyyy', { locale: dateLocale })}
-          </Typography>
-          <IconButton onClick={() => onNavigate('next')} size="small">
+        </Typography>
+        <IconButton onClick={() => onNavigate('next')} size="small">
             <ArrowForwardIos fontSize="inherit" />
-          </IconButton>
-        </Box>
+        </IconButton>
+      </Stack>
 
         <FormControl
           size="small"
           fullWidth
           sx={{
-            minWidth: { xs: 'auto', sm: 200 },
-            maxWidth: { xs: '70%', sm: 280 },
-            width: { xs: '100%', sm: 'auto' },
-            mt: { xs: 1, sm: 0 },
+          minWidth: { xs: 'auto', sm: 200 },
+          maxWidth: { xs: '100%', sm: 280 },
+          width: { xs: '100%', sm: 'auto' },
             '& .MuiOutlinedInput-root': {
               fontSize: { xs: '0.95rem', sm: '1rem' },
               '& .MuiSelect-select': {
@@ -476,7 +474,6 @@ const MonthlyCalendar = ({
             ))}
           </Select>
         </FormControl>
-      </Stack>
 
       {instructions && (
         <Typography variant="caption" color="text.secondary">
@@ -486,8 +483,10 @@ const MonthlyCalendar = ({
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 0.5 }}>
         {(weekdays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']).map((label) => (
-          <Box key={label} sx={{ textAlign: 'center', fontWeight: 600, py: 0.75 }}>
-            <Typography variant="caption">{label}</Typography>
+          <Box key={label} sx={{ textAlign: 'center', py: 0.6 }}>
+            <Typography variant="caption" color="text.secondary">
+              {label}
+            </Typography>
           </Box>
         ))}
       </Box>
@@ -555,39 +554,38 @@ const MobileDayCell = ({
     <Box
       onClick={handleClick}
       sx={{
-        minHeight: 60,
+        minHeight: 54,
         borderRadius: 1,
         border: '1px solid',
-        borderColor: hasReservation ? blockColor : 'grey.300',
-        backgroundColor: hasReservation ? blockColor : 'background.paper',
+        borderColor: 'divider',
+        backgroundColor: 'background.paper',
         color: isPast && !hasReservation ? 'text.disabled' : 'inherit',
         opacity: isCurrentMonth ? 1 : 0.4,
-        p: 0.75,
+        p: 0.65,
         cursor: hasReservation ? 'pointer' : isPast ? 'not-allowed' : 'pointer',
         display: 'flex',
         flexDirection: 'column',
+        justifyContent: 'space-between',
         gap: 0.5,
+        boxShadow: 'none',
       }}
     >
-      <Typography variant="subtitle2" sx={{ fontSize: '0.9rem', fontWeight: 600 }}>
+      <Typography
+        variant="subtitle2"
+        sx={{ fontSize: '0.86rem', fontWeight: 700, color: 'inherit' }}
+      >
         {label}
       </Typography>
       {hasReservation && (
-        <Typography
-          variant="caption"
+        <Box
           sx={{
-            fontWeight: 600,
-            color: 'common.white',
+            width: '100%',
+            height: 6,
+            borderRadius: 1,
             backgroundColor: blockColor,
-            borderRadius: 0.5,
-            px: 0.5,
-            py: 0.25,
-            alignSelf: 'flex-start',
-            display: isStart ? 'inline-flex' : 'none',
+            opacity: isStart ? 1 : 0.55,
           }}
-        >
-          {buildInitials(reservation?.name, reservation?.lastname) || `${reservation.name ?? ''}`.trim()}
-        </Typography>
+        />
       )}
     </Box>
   );
