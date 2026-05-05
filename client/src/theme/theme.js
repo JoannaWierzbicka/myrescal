@@ -20,12 +20,12 @@ const colors = {
   tealDark: '#152832',
   mint: '#DDEEEB',
   mintSoft: 'rgba(51, 180, 172, 0.18)',
-  cream: '#F5EDDC',
-  sand: '#FBF7F0',
+  cream: '#FAF7F0',
+  sand: '#FFFDFC',
   gold: '#C36F2B',
   charcoal: '#2F2A25',
   muted: '#5E4F45',
-  line: 'rgba(195, 111, 43, 0.28)',
+  line: 'rgba(195, 111, 43, 0.18)',
 };
 
 const softShadow = '0 18px 42px rgba(25, 41, 49, 0.12)';
@@ -176,7 +176,7 @@ const theme = createTheme({
           fontFamily: fonts.sans,
           color: colors.charcoal,
           background:
-            'linear-gradient(180deg, #F9F3E7 0%, #F5EDDC 52%, #EFE4CF 100%)',
+            'linear-gradient(180deg, #FFFFFF 0%, #FAF7F0 58%, #F5EFE4 100%)',
           lineHeight: 1.6,
         },
         a: {
@@ -193,7 +193,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           color: colors.charcoal,
-          background: 'rgba(251, 247, 240, 0.86)',
+          background: 'rgba(255, 253, 252, 0.9)',
           backdropFilter: 'blur(18px)',
           boxShadow: 'none',
           borderBottom: `1px solid ${colors.line}`,
@@ -279,7 +279,7 @@ const theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          backgroundColor: colors.sand,
+          backgroundColor: '#FFFFFF',
           borderRadius: radius.lg,
           border: `1px solid ${colors.line}`,
           boxShadow: softShadow,
@@ -289,7 +289,7 @@ const theme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          backgroundColor: colors.sand,
+          backgroundColor: '#FFFFFF',
           borderRadius: radius.lg,
           border: `1px solid ${colors.line}`,
           boxShadow: softShadow,
@@ -299,7 +299,7 @@ const theme = createTheme({
     MuiDialog: {
       styleOverrides: {
         paper: {
-          background: colors.sand,
+          background: '#FFFFFF',
           borderRadius: radius.lg,
           border: `1px solid ${colors.line}`,
           boxShadow: liftShadow,
@@ -325,7 +325,7 @@ const theme = createTheme({
         root: {
           minHeight: 48,
           borderRadius: radius.md,
-          backgroundColor: colors.sand,
+          backgroundColor: '#FFFFFF',
           '& fieldset': {
             borderColor: colors.line,
             borderWidth: 1,
@@ -381,7 +381,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           height: 72,
-          backgroundColor: 'rgba(251, 247, 240, 0.94)',
+          backgroundColor: 'rgba(255, 253, 252, 0.94)',
           borderTop: `1px solid ${colors.line}`,
           boxShadow: '0 -12px 34px rgba(16, 42, 51, 0.08)',
         },

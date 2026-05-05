@@ -225,24 +225,32 @@ export default function Settings() {
             }}
           >
             <Stack
-              direction={{ xs: 'column', sm: 'row' }}
+              direction="row"
               justifyContent="space-between"
-              alignItems={{ xs: 'flex-start', sm: 'center' }}
-              spacing={{ xs: 1.5, sm: 2 }}
+              alignItems="center"
+              spacing={1.25}
               sx={{ width: '100%' }}
             >
-              <Typography variant="h6">{t('settings.propertiesTitle')}</Typography>
+              <Typography variant="h6" sx={{ minWidth: 0 }}>
+                {t('settings.propertiesTitle')}
+              </Typography>
               <Button
                 startIcon={<Add />}
                 variant="contained"
+                size="small"
                 onClick={() => {
                   setEditingProperty(null);
                   setPropertyDialogOpen(true);
                 }}
                 sx={{
-                  px: { xs: 2.5, sm: 3 },
-                  minWidth: { xs: 0, sm: 170 },
-                  alignSelf: { xs: 'flex-end', sm: 'center' },
+                  minHeight: { xs: 36, sm: 44 },
+                  px: { xs: 1.25, sm: 3 },
+                  minWidth: { xs: 'auto', sm: 170 },
+                  whiteSpace: 'nowrap',
+                  fontSize: { xs: '0.78rem', sm: '0.875rem' },
+                  '& .MuiButton-startIcon': {
+                    mr: { xs: 0.5, sm: 1 },
+                  },
                 }}
               >
                 {t('settings.addProperty')}
@@ -338,25 +346,33 @@ export default function Settings() {
             }}
           >
             <Stack
-              direction={{ xs: 'column', sm: 'row' }}
+              direction="row"
               justifyContent="space-between"
-              alignItems={{ xs: 'flex-start', sm: 'center' }}
-              spacing={{ xs: 1.5, sm: 2 }}
+              alignItems="center"
+              spacing={1.25}
               sx={{ width: '100%' }}
             >
-              <Typography variant="h6">{roomsHeading}</Typography>
+              <Typography variant="h6" sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+                {roomsHeading}
+              </Typography>
               <Button
                 startIcon={<Add />}
                 variant="contained"
+                size="small"
                 onClick={() => {
                   setEditingRoom(null);
                   setRoomDialogOpen(true);
                 }}
                 disabled={!selectedProperty || properties.length === 0}
                 sx={{
-                  px: { xs: 2.5, sm: 3 },
-                  minWidth: { xs: 0, sm: 170 },
-                  alignSelf: { xs: 'flex-end', sm: 'center' },
+                  minHeight: { xs: 36, sm: 44 },
+                  px: { xs: 1.25, sm: 3 },
+                  minWidth: { xs: 'auto', sm: 170 },
+                  whiteSpace: 'nowrap',
+                  fontSize: { xs: '0.78rem', sm: '0.875rem' },
+                  '& .MuiButton-startIcon': {
+                    mr: { xs: 0.5, sm: 1 },
+                  },
                 }}
               >
                 {t('roomForm.addTitle')}

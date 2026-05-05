@@ -607,7 +607,7 @@ function ReservationFormDialog({
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      <DialogContent dividers sx={{ backgroundColor: 'background.default', px: { xs: 2, sm: 3 } }}>
+      <DialogContent dividers sx={{ backgroundColor: '#FAF7F0', px: { xs: 2, sm: 3 } }}>
         <Box
           component="form"
           onSubmit={handleSubmit}
