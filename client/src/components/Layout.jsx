@@ -10,7 +10,9 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
+import { Capacitor } from '@capacitor/core';
 import { useLocale } from '../context/LocaleContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { getPendingCount, subscribeToNetworkActivity } from '../api/client.js';
 import { useGlobalError } from '../context/ErrorContext.jsx';
 import { useAndroidBackButton } from '../mobile/useAndroidBackButton.js';
@@ -31,9 +33,13 @@ export default function Layout() {
   const networkTimersRef = useRef({ wakeup: null, slow: null });
   const wasNetworkActiveRef = useRef(false);
   const { t } = useLocale();
+  const { isAuthenticated } = useAuth();
   const { errorMessage, retryCallback, clearError } = useGlobalError();
   const hasGlobalError = Boolean(errorMessage);
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isPublicHome = location.pathname === '/' && !isAuthenticated;
+  const isNativeApp = Capacitor.isNativePlatform();
+  const isNativePublicHome = isPublicHome && isNativeApp;
 
   useAndroidBackButton();
 
@@ -132,6 +138,7 @@ export default function Layout() {
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
+          backgroundColor: isNativePublicHome ? '#FAF7F0' : 'transparent',
         }}
       >
         <Navbar />
@@ -142,14 +149,17 @@ export default function Layout() {
             flexGrow: 1,
             display: 'flex',
             alignItems: isAuthPage ? 'center' : 'stretch',
-            pt: { xs: 2, sm: 3, md: 5 },
-            pb: { xs: 12, md: 8 },
+            pt: isNativePublicHome ? { xs: 1, sm: 2, md: 5 } : { xs: 2, sm: 3, md: 5 },
+            pb: isNativePublicHome ? { xs: 2, sm: 3, md: 8 } : { xs: 12, md: 8 },
             px: { xs: 0, sm: 2, md: 0 },
+            backgroundColor: isNativePublicHome ? '#FAF7F0' : 'transparent',
             '&::before': {
               content: '""',
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(180deg, rgba(191, 230, 213, 0.2) 0%, rgba(251, 248, 241, 0) 42%)',
+              background: isNativePublicHome
+                ? 'none'
+                : 'linear-gradient(180deg, rgba(191, 230, 213, 0.2) 0%, rgba(251, 248, 241, 0) 42%)',
               pointerEvents: 'none',
             },
           }}
@@ -159,7 +169,7 @@ export default function Layout() {
             sx={{
               position: 'relative',
               px: { xs: 2, sm: 3, md: 5 },
-              py: { xs: 1.5, sm: 2.5, md: 4 },
+              py: isNativePublicHome ? { xs: 0, sm: 1.5, md: 4 } : { xs: 1.5, sm: 2.5, md: 4 },
               borderRadius: 0,
               backgroundColor: 'transparent',
               boxShadow: 'none',

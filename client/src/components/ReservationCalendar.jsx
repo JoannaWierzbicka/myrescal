@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import {
   Box,
   FormControl,
@@ -8,6 +8,8 @@ import {
   Select,
   Stack,
   Typography,
+  ToggleButton,
+  ToggleButtonGroup,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -15,6 +17,7 @@ import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
 import {
   addDays,
   addMonths,
+  addWeeks,
   differenceInCalendarDays,
   eachDayOfInterval,
   endOfMonth,
@@ -48,6 +51,9 @@ const ReservationCalendar = ({
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
   const { t, language, dateLocale } = useLocale();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [calendarView, setCalendarView] = useState(null);
+  const touchStartRef = useRef(null);
+  const resolvedCalendarView = calendarView || (isDesktop ? 'month' : 'week');
   const weekdayLabels = useMemo(() => {
     const labels = t('calendar.weekdays');
     if (Array.isArray(labels)) {
@@ -91,6 +97,36 @@ const ReservationCalendar = ({
   const getReservationsForRoom = (roomId) =>
     reservations.filter((reservation) => (reservation.room_id || reservation.room?.id) === roomId);
 
+  const navigateCalendar = (direction) => {
+    const amount = direction === 'prev' ? -1 : 1;
+    setCurrentMonth((prev) =>
+      resolvedCalendarView === 'week' ? addWeeks(prev, amount) : addMonths(prev, amount),
+    );
+  };
+
+  const handleTouchStart = (event) => {
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+    };
+  };
+
+  const handleTouchEnd = (event) => {
+    const start = touchStartRef.current;
+    const touch = event.changedTouches?.[0];
+    touchStartRef.current = null;
+    if (!start || !touch) return;
+
+    const diffX = touch.clientX - start.x;
+    const diffY = touch.clientY - start.y;
+    const isHorizontalSwipe = Math.abs(diffX) > 48 && Math.abs(diffX) > Math.abs(diffY) * 1.35;
+    if (!isHorizontalSwipe) return;
+
+    navigateCalendar(diffX < 0 ? 'next' : 'prev');
+  };
+
   if (rooms.length === 0) {
     return (
       <Box sx={{ p: 2, border: '1px dashed', borderColor: 'grey.300', borderRadius: '8px' }}>
@@ -103,28 +139,62 @@ const ReservationCalendar = ({
 
   if (!isDesktop) {
     return (
-      <MonthlyCalendar
-        currentMonth={currentMonth}
-        onNavigate={(direction) =>
-          setCurrentMonth((prev) => addMonths(prev, direction === 'prev' ? -1 : 1))
-        }
-        rooms={rooms}
-        activeRoomId={selectedRoomId || rooms[0]?.id}
-        onRoomChange={onRoomChange}
-        reservations={reservations}
-        onDayClick={onDayClick}
-        onReservationSelect={onReservationSelect}
-        weekdays={weekdayLabels}
-        instructions={t('calendar.mobileHint')}
-        roomLabel={t('navbar.roomSelector')}
-        dateLocale={dateLocale}
-        t={t}
-      />
+      <Box
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        sx={{ display: 'flex', flexDirection: 'column', gap: 2, touchAction: 'pan-y' }}
+      >
+        <CalendarViewToggle value={resolvedCalendarView} onChange={setCalendarView} t={t} />
+        {resolvedCalendarView === 'week' ? (
+          <WeeklyCalendar
+            currentDate={currentMonth}
+            onNavigate={navigateCalendar}
+            rooms={rooms}
+            reservations={reservations}
+            onDayClick={onDayClick}
+            onReservationSelect={onReservationSelect}
+            weekdays={weekdayLabels}
+            dateLocale={dateLocale}
+          />
+        ) : (
+          <MonthlyCalendar
+            currentMonth={currentMonth}
+            onNavigate={navigateCalendar}
+            rooms={rooms}
+            activeRoomId={selectedRoomId || rooms[0]?.id}
+            onRoomChange={onRoomChange}
+            reservations={reservations}
+            onDayClick={onDayClick}
+            onReservationSelect={onReservationSelect}
+            weekdays={weekdayLabels}
+            instructions={t('calendar.mobileHint')}
+            roomLabel={t('navbar.roomSelector')}
+            dateLocale={dateLocale}
+            t={t}
+          />
+        )}
+      </Box>
     );
   }
 
   return (
     <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <CalendarViewToggle value={resolvedCalendarView} onChange={setCalendarView} t={t} />
+      </Box>
+      {resolvedCalendarView === 'week' ? (
+        <WeeklyCalendar
+          currentDate={currentMonth}
+          onNavigate={navigateCalendar}
+          rooms={rooms}
+          reservations={reservations}
+          onDayClick={onDayClick}
+          onReservationSelect={onReservationSelect}
+          weekdays={weekdayLabels}
+          dateLocale={dateLocale}
+        />
+      ) : (
+      <>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <IconButton onClick={() => setCurrentMonth((prev) => addMonths(prev, -1))}>
           <ArrowBackIos fontSize="small" />
@@ -256,6 +326,8 @@ const ReservationCalendar = ({
           );
         })}
       </Box>
+      </>
+      )}
     </Box>
   );
 };
@@ -274,6 +346,354 @@ const buildInitials = (name, lastname) => {
     .slice(0, 2)
     .join('');
 };
+
+function CalendarViewToggle({ value, onChange, t }) {
+  return (
+    <ToggleButtonGroup
+      value={value}
+      exclusive
+      size="small"
+      onChange={(_event, nextValue) => {
+        if (nextValue) onChange(nextValue);
+      }}
+      sx={{
+        alignSelf: 'flex-end',
+        backgroundColor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1.5,
+        p: 0.35,
+        '& .MuiToggleButton-root': {
+          border: 0,
+          borderRadius: 1,
+          px: 1.5,
+          py: 0.6,
+          color: 'text.secondary',
+          fontWeight: 700,
+          '&.Mui-selected': {
+            backgroundColor: 'primary.main',
+            color: 'primary.contrastText',
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+            },
+          },
+        },
+      }}
+    >
+      <ToggleButton value="month">{t('calendar.views.month')}</ToggleButton>
+      <ToggleButton value="week">{t('calendar.views.week')}</ToggleButton>
+    </ToggleButtonGroup>
+  );
+}
+
+function WeeklyCalendar({
+  currentDate,
+  onNavigate,
+  rooms,
+  reservations,
+  onDayClick,
+  onReservationSelect,
+  weekdays,
+  dateLocale,
+}) {
+  const today = startOfToday();
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
+    [weekStart],
+  );
+  const weekEnd = weekDays[6];
+  const weekHeaderLabel = useMemo(() => {
+    const startsAndEndsInSameMonth =
+      weekStart.getMonth() === weekEnd.getMonth() && weekStart.getFullYear() === weekEnd.getFullYear();
+    const startsAndEndsInSameYear = weekStart.getFullYear() === weekEnd.getFullYear();
+
+    if (startsAndEndsInSameMonth) {
+      return format(weekStart, 'LLLL yyyy', { locale: dateLocale });
+    }
+
+    if (startsAndEndsInSameYear) {
+      return `${format(weekStart, 'LLLL', { locale: dateLocale })} / ${format(weekEnd, 'LLLL yyyy', { locale: dateLocale })}`;
+    }
+
+    return `${format(weekStart, 'LLLL yyyy', { locale: dateLocale })} / ${format(weekEnd, 'LLLL yyyy', { locale: dateLocale })}`;
+  }, [dateLocale, weekEnd, weekStart]);
+  const groupedRooms = useMemo(() => {
+    const groups = [];
+    const groupMap = new Map();
+
+    rooms.forEach((room) => {
+      const groupName = room.propertyName || '';
+      if (!groupMap.has(groupName)) {
+        const group = { name: groupName, rooms: [] };
+        groupMap.set(groupName, group);
+        groups.push(group);
+      }
+      groupMap.get(groupName).rooms.push(room);
+    });
+
+    return groups;
+  }, [rooms]);
+
+  const getReservationsForRoom = (roomId) =>
+    reservations.filter((reservation) => (reservation.room_id || reservation.room?.id) === roomId);
+
+  const buildReservationBlocks = (roomReservations) =>
+    roomReservations
+      .map((reservation) => {
+        const start = safeParseDate(reservation.start_date);
+        const end = safeParseDate(reservation.end_date);
+        if (!start || !end) return null;
+
+        const inclusiveEnd = addDays(end, -1);
+        const effectiveEnd = inclusiveEnd >= start ? inclusiveEnd : start;
+        if (effectiveEnd < weekStart || start > weekEnd) return null;
+
+        const visibleStart = start < weekStart ? weekStart : start;
+        const visibleEnd = effectiveEnd > weekEnd ? weekEnd : effectiveEnd;
+        const startIndex = Math.max(0, differenceInCalendarDays(visibleStart, weekStart));
+        const endIndex = Math.min(6, differenceInCalendarDays(visibleEnd, weekStart));
+        const span = endIndex - startIndex + 1;
+        const statusMeta = getReservationStatusMeta(reservation.status);
+
+        return {
+          reservation,
+          startIndex,
+          span,
+          color: statusMeta.background,
+          textColor: statusMeta.color,
+        };
+      })
+      .filter(Boolean);
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.6 }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        spacing={1}
+        sx={{
+          px: { xs: 1, sm: 1.5 },
+          py: { xs: 0.75, sm: 1 },
+          borderRadius: 1.5,
+          backgroundColor: 'rgba(255,255,255,0.72)',
+          border: '1px solid',
+          borderColor: 'divider',
+          boxShadow: '0 10px 24px rgba(16, 42, 51, 0.04)',
+        }}
+      >
+        <IconButton onClick={() => onNavigate('prev')} size="small" sx={{ color: 'text.primary' }}>
+          <ArrowBackIos fontSize="inherit" />
+        </IconButton>
+        <Typography variant="h6" sx={{ color: 'primary.dark', textAlign: 'center', fontSize: { xs: '1rem', sm: '1.1rem' } }}>
+          {weekHeaderLabel}
+        </Typography>
+        <IconButton onClick={() => onNavigate('next')} size="small" sx={{ color: 'text.primary' }}>
+          <ArrowForwardIos fontSize="inherit" />
+        </IconButton>
+      </Stack>
+
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: 'repeat(7, minmax(0, 1fr))', sm: '58px repeat(7, minmax(0, 1fr))' },
+          alignItems: 'center',
+          columnGap: { xs: 0.25, sm: 0.5 },
+        }}
+      >
+        <Box sx={{ display: { xs: 'none', sm: 'block' } }} />
+        {weekDays.map((day, index) => {
+          const isActive = isSameDay(day, currentDate);
+          return (
+            <Box
+              key={day.toISOString()}
+              sx={{
+                minWidth: 0,
+                height: 52,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.25,
+              }}
+            >
+              <Box
+                sx={{
+                  width: isActive ? 38 : 'auto',
+                  height: isActive ? 38 : 'auto',
+                  minWidth: isActive ? 38 : 0,
+                  borderRadius: '50%',
+                  display: 'grid',
+                  placeItems: 'center',
+                  backgroundColor: isActive ? 'primary.main' : 'transparent',
+                  color: isActive ? 'primary.contrastText' : 'text.primary',
+                }}
+              >
+                <Stack spacing={0} alignItems="center" sx={{ lineHeight: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontSize: isActive ? '0.9rem' : '0.82rem', lineHeight: 1 }}>
+                    {format(day, 'd', { locale: dateLocale })}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'inherit',
+                      opacity: isActive ? 0.9 : 0.72,
+                      fontSize: isActive ? '0.52rem' : '0.58rem',
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {weekdays[index]}
+                  </Typography>
+                </Stack>
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
+
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: 'repeat(7, minmax(0, 1fr))', sm: '58px repeat(7, minmax(0, 1fr))', lg: '96px repeat(7, minmax(0, 1fr))' },
+          alignItems: 'stretch',
+          overflow: 'hidden',
+        }}
+      >
+        {groupedRooms.map((group) => (
+          <React.Fragment key={group.name || 'rooms'}>
+            {group.name ? (
+              <Box
+                sx={{
+                  gridColumn: '1 / -1',
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  pt: 1,
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    fontWeight: 800,
+                    fontSize: { xs: '0.62rem', sm: '0.68rem' },
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {group.name}
+                </Typography>
+              </Box>
+            ) : null}
+            {group.rooms.map((room) => {
+              const roomReservations = getReservationsForRoom(room.id);
+              const blocks = buildReservationBlocks(roomReservations);
+
+              return (
+                <React.Fragment key={room.id}>
+                  <Box
+                    sx={{
+                      gridColumn: { xs: '1 / -1', sm: 'auto' },
+                      minHeight: { xs: 22, sm: 46 },
+                      display: 'flex',
+                      alignItems: { xs: 'flex-end', sm: 'center' },
+                      pr: { xs: 0, sm: 1 },
+                      pt: { xs: 0.6, sm: 0 },
+                      pb: { xs: 0.15, sm: 0 },
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        width: '100%',
+                        color: 'text.primary',
+                        fontSize: { xs: '0.75rem', sm: '0.88rem' },
+                        fontWeight: 700,
+                        lineHeight: { xs: 1.15, sm: 1 },
+                        overflowWrap: 'anywhere',
+                      }}
+                    >
+                      {room.name}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      gridColumn: { xs: '1 / -1', sm: 'span 7' },
+                      position: 'relative',
+                      minHeight: { xs: 38, sm: 46 },
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                      backgroundImage:
+                        'repeating-linear-gradient(to right, rgba(16,42,51,0.065) 0 1px, transparent 1px calc(100% / 7))',
+                    }}
+                  >
+                    {weekDays.map((day) => {
+                      const isPast = isBefore(day, today);
+                      return (
+                        <Box
+                          key={day.toISOString()}
+                          onClick={() => {
+                            if (!isPast) onDayClick?.(day, room);
+                          }}
+                          sx={{
+                            minHeight: { xs: 38, sm: 46 },
+                            cursor: isPast ? 'not-allowed' : 'pointer',
+                            backgroundColor: isPast ? 'rgba(16,42,51,0.012)' : 'transparent',
+                            '&:hover': !isPast ? { backgroundColor: 'rgba(51,180,172,0.06)' } : undefined,
+                          }}
+                        />
+                      );
+                    })}
+
+                    {blocks.map((block) => {
+                      const guestName = [block.reservation.name, block.reservation.lastname]
+                        .filter(Boolean)
+                        .join(' ');
+                      return (
+                        <Box
+                          key={block.reservation.id}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onReservationSelect?.(block.reservation);
+                          }}
+                          sx={{
+                            position: 'absolute',
+                            top: { xs: 5, sm: 8 },
+                            left: `calc(${(block.startIndex / 7) * 100}% + 3px)`,
+                            width: `calc(${(block.span / 7) * 100}% - 6px)`,
+                            height: { xs: 28, sm: 30 },
+                            display: 'flex',
+                            alignItems: 'center',
+                            px: { xs: 0.75, sm: 1 },
+                            borderRadius: 1,
+                            backgroundColor: block.color,
+                            color: block.textColor,
+                            fontWeight: 700,
+                            fontSize: { xs: '0.68rem', sm: '0.74rem', lg: '0.78rem' },
+                            lineHeight: 1,
+                            overflow: 'hidden',
+                            whiteSpace: 'nowrap',
+                            textOverflow: 'ellipsis',
+                            cursor: 'pointer',
+                            boxShadow: '0 8px 16px rgba(16, 42, 51, 0.06)',
+                          }}
+                          title={guestName}
+                        >
+                          {guestName || buildInitials(block.reservation.name, block.reservation.lastname)}
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </React.Fragment>
+              );
+            })}
+          </React.Fragment>
+        ))}
+      </Box>
+    </Box>
+  );
+}
 
 const DayCell = ({ day, room, reservationsForRoom, onDayClick, onReservationSelect }) => {
   const reservation = reservationsForRoom.find((item) => {
@@ -541,6 +961,7 @@ const MobileDayCell = ({
   const isStart = hasReservation && startDate && isSameDay(day, startDate);
   const statusMeta = reservation ? getReservationStatusMeta(reservation.status) : null;
   const blockColor = statusMeta?.background || '#235369';
+  const blockTextColor = statusMeta?.color || '#102A33';
 
   const handleClick = () => {
     if (hasReservation) {
@@ -557,9 +978,9 @@ const MobileDayCell = ({
         minHeight: 54,
         borderRadius: 1,
         border: '1px solid',
-        borderColor: 'divider',
-        backgroundColor: 'background.paper',
-        color: isPast && !hasReservation ? 'text.disabled' : 'inherit',
+        borderColor: hasReservation ? blockColor : 'divider',
+        backgroundColor: hasReservation ? blockColor : 'background.paper',
+        color: hasReservation ? blockTextColor : isPast ? 'text.disabled' : 'inherit',
         opacity: isCurrentMonth ? 1 : 0.4,
         p: 0.65,
         cursor: hasReservation ? 'pointer' : isPast ? 'not-allowed' : 'pointer',
@@ -568,6 +989,7 @@ const MobileDayCell = ({
         justifyContent: 'space-between',
         gap: 0.5,
         boxShadow: 'none',
+        transition: 'background-color 0.16s ease, border-color 0.16s ease',
       }}
     >
       <Typography
@@ -577,15 +999,23 @@ const MobileDayCell = ({
         {label}
       </Typography>
       {hasReservation && (
-        <Box
-          sx={{
-            width: '100%',
-            height: 6,
-            borderRadius: 1,
-            backgroundColor: blockColor,
-            opacity: isStart ? 1 : 0.55,
-          }}
-        />
+        isStart ? (
+          <Typography
+            variant="caption"
+            noWrap
+            sx={{
+              color: 'inherit',
+              fontSize: '0.58rem',
+              fontWeight: 700,
+              lineHeight: 1,
+            }}
+          >
+            {[reservation.name, reservation.lastname].filter(Boolean).join(' ') ||
+              buildInitials(reservation.name, reservation.lastname)}
+          </Typography>
+        ) : (
+          <Box sx={{ width: '100%', height: 1 }} />
+        )
       )}
     </Box>
   );

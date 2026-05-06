@@ -15,8 +15,10 @@ export const translations = {
     home: {
       heroAccent: 'Reservations fully under control',
       heroTitle: 'Manage your bookings like a pro',
+      welcomeSubtitle: 'All reservations. Full control. One view.',
       heroSubtitle:
         'A dedicated workspace for property owners to organise reservations, track availability, and keep every guest stay under control.',
+      getStarted: 'Get started',
       goToDashboard: 'Go to dashboard',
       login: 'Log in',
       createAccount: 'Create account',
@@ -24,10 +26,10 @@ export const translations = {
       highlightCardDescription: 'See occupancy at a glance and quickly edit stays.',
       featureCalendarTitle: 'Calendar',
       featureCalendarBody: 'Room occupancy in one clear view.',
-      featureBookingsTitle: 'Bookings',
-      featureBookingsBody: 'Reservations, guests and stays under control.',
-      featureUpdatesTitle: 'Updates',
-      featureUpdatesBody: 'A calm workspace for daily operations.',
+      featureBookingsTitle: 'Manage',
+      featureBookingsBody: 'Reservations without extra effort.',
+      featureUpdatesTitle: 'Stay updated',
+      featureUpdatesBody: 'Notifications and daily alerts.',
     },
     footer: {
       copyright: '© {{year}} MyResCal',
@@ -40,6 +42,12 @@ export const translations = {
     },
     loader: {
       preparing: 'Preparing your stays...',
+    },
+    summary: {
+      title: 'Summary',
+      greeting: 'Good day, {{name}}',
+      greetingFallback: 'Good day',
+      subtitle: 'A quick operational snapshot for today.',
     },
     dashboard: {
       title: 'Dashboard',
@@ -58,14 +66,21 @@ export const translations = {
       },
     },
     calendar: {
+      title: 'Calendar',
+      subtitle: 'Check room availability and manage stays by date.',
       room: 'Room',
       date: 'Date',
       noRooms: 'No rooms available. Add rooms in Settings to see availability.',
       mobileHint: 'Tap a free day to add a reservation.',
       weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      views: {
+        month: 'Month',
+        week: 'Week',
+      },
     },
     reservationList: {
       title: 'Reservations',
+      subtitle: 'Browse, filter and sort reservation cards.',
       sortBy: 'Sort By',
       sortOptions: {
         date: 'Start Date',
@@ -124,6 +139,8 @@ export const translations = {
       notes: 'Notes',
       from: 'From',
       to: 'To',
+      checkIn: 'Check-in',
+      checkOut: 'Check-out',
       adults: 'Adults',
       children: 'Children',
       status: 'Status',
@@ -188,6 +205,13 @@ export const translations = {
       },
       info: {
         addProperty: 'Add a property first in Settings to create reservations.',
+      },
+      unsavedChanges: {
+        title: 'Unsaved changes',
+        message: 'You have unsaved changes in this reservation. Do you want to save them before closing?',
+        keepEditing: 'Keep editing',
+        discard: 'Discard',
+        save: 'Save changes',
       },
     },
     settings: {
@@ -276,8 +300,10 @@ export const translations = {
     home: {
       heroAccent: 'Rezerwacje pod pełną kontrolą',
       heroTitle: 'Zarządzaj rezerwacjami jak profesjonalista',
+      welcomeSubtitle: 'Wszystkie rezerwacje. Pełna kontrola. Jeden widok.',
       heroSubtitle:
         'Dedykowane miejsce pracy dla właścicieli, którzy chcą porządkować rezerwacje, kontrolować dostępność i dbać o każdy pobyt gości.',
+      getStarted: 'Zacznijmy',
       goToDashboard: 'Przejdź do panelu',
       login: 'Zaloguj się',
       createAccount: 'Załóż konto',
@@ -285,10 +311,10 @@ export const translations = {
       highlightCardDescription: 'Zobacz obłożenie na pierwszy rzut oka i szybko edytuj pobyty.',
       featureCalendarTitle: 'Kalendarz',
       featureCalendarBody: 'Obłożenie pokoi w jednym czytelnym widoku.',
-      featureBookingsTitle: 'Rezerwacje',
-      featureBookingsBody: 'Pobyty, goście i terminy pod kontrolą.',
-      featureUpdatesTitle: 'Praca',
-      featureUpdatesBody: 'Spokojna przestrzeń do codziennej obsługi.',
+      featureBookingsTitle: 'Zarządzaj',
+      featureBookingsBody: 'Rezerwacjami bez wysiłku.',
+      featureUpdatesTitle: 'Bądź na bieżąco',
+      featureUpdatesBody: 'Powiadomienia i alerty.',
     },
     footer: {
       copyright: '© {{year}} MyResCal',
@@ -301,6 +327,12 @@ export const translations = {
     },
     loader: {
       preparing: 'Przygotowujemy Twoje rezerwacje...',
+    },
+    summary: {
+      title: 'Podsumowanie',
+      greeting: 'Dzień dobry, {{name}}',
+      greetingFallback: 'Dzień dobry',
+      subtitle: 'Szybki podgląd najważniejszych informacji na dziś.',
     },
     dashboard: {
       title: 'Panel',
@@ -319,14 +351,21 @@ export const translations = {
       },
     },
     calendar: {
+      title: 'Kalendarz',
+      subtitle: 'Sprawdzaj dostępność pokoi i zarządzaj pobytami według dat.',
       room: 'Pokój',
       date: 'Data',
       noRooms: 'Brak dostępnych pokoi. Dodaj pokoje w ustawieniach, aby zobaczyć dostępność.',
       mobileHint: 'Dotknij wolnego dnia, aby dodać rezerwację.',
       weekdays: ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Ndz'],
+      views: {
+        month: 'Miesiąc',
+        week: 'Tydzień',
+      },
     },
     reservationList: {
       title: 'Rezerwacje',
+      subtitle: 'Przeglądaj, filtruj i sortuj kafelki rezerwacji.',
       sortBy: 'Sortuj według',
       sortOptions: {
         date: 'Data rozpoczęcia',
@@ -385,6 +424,8 @@ export const translations = {
       notes: 'Uwagi',
       from: 'Od',
       to: 'Do',
+      checkIn: 'Zameldowanie',
+      checkOut: 'Wymeldowanie',
       adults: 'Dorośli',
       children: 'Dzieci',
       status: 'Status',
@@ -449,6 +490,13 @@ export const translations = {
       },
       info: {
         addProperty: 'Najpierw dodaj obiekt w ustawieniach, aby tworzyć rezerwacje.',
+      },
+      unsavedChanges: {
+        title: 'Niezapisane zmiany',
+        message: 'Masz niezapisane zmiany w tej rezerwacji. Czy chcesz je zapisać przed zamknięciem?',
+        keepEditing: 'Wróć do edycji',
+        discard: 'Odrzuć zmiany',
+        save: 'Zapisz zmiany',
       },
     },
     settings: {

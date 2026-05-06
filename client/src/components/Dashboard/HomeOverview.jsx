@@ -11,7 +11,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import ReservationCalendar from '../ReservationCalendar.jsx';
 import ReservationList from '../ReservationList.jsx';
@@ -25,13 +25,15 @@ import {
   updateReservation,
   deleteReservation,
 } from '../../api/reservations.js';
-import { addDays, startOfToday, isBefore, isSameDay } from 'date-fns';
+import { addDays, startOfToday, isBefore } from 'date-fns';
 import { useLocale } from '../../context/LocaleContext.jsx';
 
 const formatDateInput = (date) => format(date, 'yyyy-MM-dd');
 
-export default function HomeOverview() {
+export default function HomeOverview({ view = 'reservations' }) {
   const { t } = useLocale();
+  const navigate = useNavigate();
+  const isCalendarView = view === 'calendar';
   const [properties, setProperties] = useState([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [rooms, setRooms] = useState([]);
@@ -150,22 +152,6 @@ export default function HomeOverview() {
     });
   }, [reservations, roomFilterId]);
 
-  const dashboardStats = useMemo(() => {
-    const today = startOfToday();
-    const arrivals = reservations.filter((reservation) => {
-      const date = reservation.start_date ? new Date(reservation.start_date) : null;
-      return date && !Number.isNaN(date.getTime()) && isSameDay(date, today);
-    }).length;
-    const departures = reservations.filter((reservation) => {
-      const date = reservation.end_date ? new Date(reservation.end_date) : null;
-      return date && !Number.isNaN(date.getTime()) && isSameDay(date, today);
-    }).length;
-    return [
-      { key: 'arrivals', label: t('dashboard.todayArrivals'), value: arrivals },
-      { key: 'departures', label: t('dashboard.todayDepartures'), value: departures },
-    ];
-  }, [reservations, t]);
-
   const [mobileActiveRoomId, setMobileActiveRoomId] = useState('');
 
   useEffect(() => {
@@ -251,6 +237,11 @@ export default function HomeOverview() {
         room_id: reservation.room_id || reservation.room?.id || '',
       },
     });
+  };
+
+  const openReservationDetail = (reservation) => {
+    if (!reservation?.id) return;
+    navigate(`/dashboard/detail/${reservation.id}`);
   };
 
   const handleCreate = async (values) => {
@@ -342,10 +333,10 @@ export default function HomeOverview() {
       >
         <Box sx={{ flexGrow: 1 }}>
           <Typography variant="h4" component="h1" sx={{ color: 'primary.dark', mb: 0.5 }}>
-            {t('dashboard.title')}
+            {isCalendarView ? t('calendar.title') : t('reservationList.title')}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {t('dashboard.subtitle')}
+            {isCalendarView ? t('calendar.subtitle') : t('reservationList.subtitle')}
           </Typography>
         </Box>
 
@@ -381,36 +372,6 @@ export default function HomeOverview() {
 
       </Stack>
 
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(2, minmax(0, 1fr))' },
-          gap: { xs: 1.25, md: 2 },
-          maxWidth: { md: 620 },
-        }}
-      >
-        {dashboardStats.map((stat) => (
-          <Box
-            key={stat.key}
-            sx={{
-              p: { xs: 2, md: 2.4 },
-              borderRadius: 1.5,
-              backgroundColor: '#FFFFFF',
-              border: '1px solid',
-              borderColor: 'divider',
-              boxShadow: '0 16px 34px rgba(16, 42, 51, 0.07)',
-            }}
-          >
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
-              {stat.label}
-            </Typography>
-            <Typography variant="h4" sx={{ color: 'primary.dark', fontSize: { xs: '1.65rem', md: '1.9rem' } }}>
-              {stat.value}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
-
       {propertiesError && <Alert severity="error">{propertiesError}</Alert>}
 
       {!selectedPropertyId && !loadingProperties ? (
@@ -419,6 +380,7 @@ export default function HomeOverview() {
         </Alert>
       ) : (
         <>
+          {isCalendarView ? (
           <Box>
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
@@ -478,7 +440,7 @@ export default function HomeOverview() {
                     rooms={roomsForCalendar}
                     reservations={reservations}
                     onDayClick={handleDayClick}
-                    onReservationSelect={openEditDialog}
+                    onReservationSelect={openReservationDetail}
                     onRoomChange={(roomId) => {
                       const targetRoom = rooms.find((room) => room.id === roomId);
                       if (targetRoom?.property_id) {
@@ -495,7 +457,9 @@ export default function HomeOverview() {
               </>
             )}
           </Box>
+          ) : null}
 
+          {!isCalendarView ? (
           <ReservationList
             reservations={filteredReservations}
             onDeleteReservation={handleDelete}
@@ -512,6 +476,7 @@ export default function HomeOverview() {
             roomFilterId={roomFilterId}
             onRoomFilterChange={setRoomFilterId}
           />
+          ) : null}
         </>
       )}
 

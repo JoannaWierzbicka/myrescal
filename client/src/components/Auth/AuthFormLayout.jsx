@@ -1,5 +1,5 @@
 import { Box, Paper, Stack, Typography } from '@mui/material';
-import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined';
+import AppLogo from '../AppLogo.jsx';
 
 const AUTH_PANEL_MAX_WIDTH = 420;
 
@@ -11,15 +11,11 @@ export default function AuthFormLayout({ children }) {
           sx={{
             width: 54,
             height: 54,
-            borderRadius: '10px',
             display: 'grid',
             placeItems: 'center',
-            color: 'primary.main',
-            backgroundColor: 'success.light',
-            border: '1px solid rgba(15, 76, 79, 0.12)',
           }}
         >
-          <ApartmentOutlinedIcon />
+          <AppLogo size="100%" />
         </Box>
         <Typography variant="h5" sx={{ color: 'primary.dark' }}>
           MyResCal

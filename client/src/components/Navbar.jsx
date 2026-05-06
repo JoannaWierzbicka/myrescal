@@ -20,7 +20,7 @@ import {
   useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined';
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
@@ -28,6 +28,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useLocale } from '../context/LocaleContext.jsx';
+import AppLogo from './AppLogo.jsx';
 
 const mobileNavSx = {
   position: 'fixed',
@@ -53,8 +54,10 @@ export default function Navbar() {
   const languageLabel = language === 'en' ? 'PL' : 'EN';
 
   const activeMobileTab = useMemo(() => {
-    if (location.pathname.includes('/settings')) return 'object';
+    if (location.pathname.includes('/settings')) return null;
+    if (location.pathname.includes('/summary')) return 'summary';
     if (location.pathname.includes('/add')) return null;
+    if (location.pathname.includes('/calendar')) return 'calendar';
     if (location.pathname.startsWith('/dashboard')) return 'reservations';
     return 'reservations';
   }, [location.pathname]);
@@ -78,7 +81,9 @@ export default function Navbar() {
 
   const drawerNavItems = isAuthenticated
     ? [
-        { key: 'reservations', label: t('reservationList.title'), to: '/dashboard' },
+        { key: 'calendar', label: t('calendar.title'), to: '/dashboard/calendar' },
+        { key: 'reservations', label: t('reservationList.title'), to: '/dashboard', end: true },
+        { key: 'summary', label: t('summary.title'), to: '/dashboard/summary' },
         { key: 'settings', label: t('navbar.settings'), to: '/dashboard/settings' },
       ]
     : [
@@ -105,16 +110,12 @@ export default function Navbar() {
               sx={{
                 width: { xs: 40, sm: 44 },
                 height: { xs: 40, sm: 44 },
-                borderRadius: '10px',
                 display: 'grid',
                 placeItems: 'center',
-                color: 'primary.main',
-                backgroundColor: 'rgba(191, 230, 213, 0.55)',
-                border: '1px solid rgba(15, 76, 79, 0.12)',
                 flex: '0 0 auto',
               }}
             >
-              <ApartmentOutlinedIcon fontSize="small" />
+              <AppLogo size="100%" />
             </Box>
             <Box sx={{ minWidth: 0 }}>
               <Typography
@@ -150,8 +151,14 @@ export default function Navbar() {
             <Stack direction="row" spacing={1} alignItems="center">
               {isAuthenticated ? (
                 <>
-                  <Button component={NavLink} to="/dashboard" variant="text" startIcon={<DashboardOutlinedIcon />}>
-                    {t('dashboard.title')}
+                  <Button component={NavLink} to="/dashboard/summary" variant="text" startIcon={<DashboardOutlinedIcon />}>
+                    {t('summary.title')}
+                  </Button>
+                  <Button component={NavLink} to="/dashboard/calendar" variant="text" startIcon={<CalendarMonthOutlinedIcon />}>
+                    {t('calendar.title')}
+                  </Button>
+                  <Button component={NavLink} to="/dashboard" end variant="text" startIcon={<ListAltOutlinedIcon />}>
+                    {t('reservationList.title')}
                   </Button>
                   <Button component={NavLink} to="/dashboard/add" variant="contained" color="primary">
                     {t('navbar.addReservation')}
@@ -213,7 +220,10 @@ export default function Navbar() {
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2.5 }}>
-            <Typography variant="h6">MyResCal</Typography>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <AppLogo size={36} />
+              <Typography variant="h6">MyResCal</Typography>
+            </Stack>
             <IconButton onClick={() => setMenuOpen(false)} aria-label="close navigation">
               <CloseIcon />
             </IconButton>
@@ -231,6 +241,7 @@ export default function Navbar() {
                 <ListItemButton
                   component={NavLink}
                   to={item.to}
+                  end={item.end}
                   onClick={() => setMenuOpen(false)}
                   sx={{
                     borderRadius: 1.5,
@@ -294,16 +305,16 @@ export default function Navbar() {
             showLabels
             value={activeMobileTab}
             onChange={(_event, value) => {
-              if (value === 'object') {
-                navigate('/dashboard/settings');
+              if (value === 'calendar') {
+                navigate('/dashboard/calendar');
                 return;
               }
               navigate('/dashboard');
             }}
           >
-            <BottomNavigationAction label={t('reservationList.title')} value="reservations" icon={<ListAltOutlinedIcon />} />
+            <BottomNavigationAction label={t('calendar.title')} value="calendar" icon={<CalendarMonthOutlinedIcon />} />
             <BottomNavigationAction disabled label="" value="spacer" icon={<Box sx={{ width: 58 }} />} />
-            <BottomNavigationAction label={t('navbar.settings')} value="object" icon={<ApartmentOutlinedIcon />} />
+            <BottomNavigationAction label={t('reservationList.title')} value="reservations" icon={<ListAltOutlinedIcon />} />
           </BottomNavigation>
         </Box>
       ) : null}
