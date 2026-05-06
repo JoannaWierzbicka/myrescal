@@ -1,88 +1,66 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   AppBar,
-  Toolbar,
-  Typography,
-  Button,
-  Stack,
-  IconButton,
-  Drawer,
+  BottomNavigation,
+  BottomNavigationAction,
   Box,
+  Button,
   Divider,
+  Drawer,
+  Fab,
+  IconButton,
   List,
   ListItem,
   ListItemButton,
   ListItemText,
-  useTheme,
+  Stack,
+  Toolbar,
+  Typography,
   useMediaQuery,
+  useTheme,
 } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
+import AddIcon from '@mui/icons-material/Add';
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import CloseIcon from '@mui/icons-material/Close';
-import FilterHdrIcon from '@mui/icons-material/FilterHdr';
-import { Link, NavLink } from 'react-router-dom';
+import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
+import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
+import MenuIcon from '@mui/icons-material/Menu';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useLocale } from '../context/LocaleContext.jsx';
+import AppLogo from './AppLogo.jsx';
+
+const mobileNavSx = {
+  position: 'fixed',
+  right: 0,
+  bottom: 0,
+  left: 0,
+  zIndex: (theme) => theme.zIndex.appBar + 2,
+  pb: 'env(safe-area-inset-bottom)',
+  backgroundColor: 'rgba(255, 255, 255, 0.94)',
+};
 
 export default function Navbar() {
   const { user, isAuthenticated, logout, isLoggingOut } = useAuth();
   const { t, language, setLanguage } = useLocale();
+  const location = useLocation();
+  const navigate = useNavigate();
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
   const [menuOpen, setMenuOpen] = useState(false);
 
   const userLabel = user?.email || user?.phone || null;
-  const brandTagline = t('navbar.brandTagline');
   const toggleLanguage = () => setLanguage(language === 'en' ? 'pl' : 'en');
   const languageLabel = language === 'en' ? 'PL' : 'EN';
-  const authActionButtonSx = {
-    boxShadow: 'none',
-    transform: 'none',
-    borderWidth: 2,
-    borderColor: 'rgba(250, 247, 240, 0.58)',
-    color: 'rgba(250, 247, 240, 0.92)',
-    backgroundColor: 'rgba(250, 247, 240, 0.06)',
-    '&:hover': {
-      boxShadow: 'none',
-      transform: 'none',
-      borderWidth: 2,
-      borderColor: 'rgba(250, 247, 240, 0.82)',
-      backgroundColor: 'rgba(250, 247, 240, 0.16)',
-    },
-    '&.active': {
-      borderColor: 'rgba(250, 247, 240, 0.9)',
-      backgroundColor: 'rgba(250, 247, 240, 0.2)',
-    },
-    '&.Mui-disabled': {
-      opacity: 1,
-      boxShadow: 'none',
-      transform: 'none',
-      borderColor: 'rgba(250, 247, 240, 0.58)',
-      color: 'rgba(250, 247, 240, 0.92)',
-      backgroundColor: 'rgba(250, 247, 240, 0.06)',
-    },
-  };
-  const drawerAuthActionButtonSx = {
-    boxShadow: 'none',
-    transform: 'none',
-    borderWidth: 2,
-    borderColor: 'rgba(31, 60, 74, 0.4)',
-    color: 'primary.main',
-    '&:hover': {
-      boxShadow: 'none',
-      transform: 'none',
-      borderWidth: 2,
-      borderColor: 'rgba(31, 60, 74, 0.6)',
-      backgroundColor: 'rgba(31, 60, 74, 0.08)',
-    },
-    '&.Mui-disabled': {
-      opacity: 1,
-      boxShadow: 'none',
-      transform: 'none',
-      borderColor: 'rgba(31, 60, 74, 0.4)',
-      color: 'primary.main',
-      backgroundColor: 'transparent',
-    },
-  };
+
+  const activeMobileTab = useMemo(() => {
+    if (location.pathname.includes('/settings')) return null;
+    if (location.pathname.includes('/summary')) return 'summary';
+    if (location.pathname.includes('/add')) return null;
+    if (location.pathname.includes('/calendar')) return 'calendar';
+    if (location.pathname.startsWith('/dashboard')) return 'reservations';
+    return 'reservations';
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -92,7 +70,6 @@ export default function Navbar() {
   const renderLanguageButton = (props = {}) => (
     <Button
       variant="outlined"
-      color="inherit"
       onClick={toggleLanguage}
       aria-label={t('navbar.language')}
       size="small"
@@ -104,8 +81,9 @@ export default function Navbar() {
 
   const drawerNavItems = isAuthenticated
     ? [
-        { key: 'dashboard', label: t('navbar.allReservations'), to: '/dashboard' },
-        { key: 'add', label: t('navbar.addReservation'), to: '/dashboard/add' },
+        { key: 'calendar', label: t('calendar.title'), to: '/dashboard/calendar' },
+        { key: 'reservations', label: t('reservationList.title'), to: '/dashboard', end: true },
+        { key: 'summary', label: t('summary.title'), to: '/dashboard/summary' },
         { key: 'settings', label: t('navbar.settings'), to: '/dashboard/settings' },
       ]
     : [
@@ -114,195 +92,116 @@ export default function Navbar() {
       ];
 
   return (
-    <AppBar
-      position="sticky"
-      color="primary"
-      sx={{
-        borderRadius: 0,
-        boxShadow: '0 18px 48px rgba(15, 36, 46, 0.26)',
-        borderBottom: '1px solid rgba(195, 111, 43, 0.25)',
-      }}
-    >
-      <Toolbar
-        disableGutters
-        sx={{
-          width: '100%',
-          px: { xs: 2.5, sm: 4, md: 6 },
-          py: { xs: 1.5, md: 2 },
-          gap: 2,
-        }}
-      >
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ flexGrow: 1 }}>
-          <Box
-            component={Link}
-            to="/"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: { xs: 1.1, sm: 1.3, md: 1.6 },
-              px: { xs: 1.5, sm: 2, md: 2.6 },
-              py: { xs: 0.75, sm: 0.95, md: 1.3 },
-              borderRadius: { xs: '22px', md: '28px' },
-              border: '1px solid rgba(195, 111, 43, 0.45)',
-              background: 'rgba(250, 247, 240, 0.1)',
-              boxShadow: '0 14px 28px rgba(15, 36, 46, 0.32)',
-              transition: 'transform 0.25s ease, box-shadow 0.3s ease',
-              minWidth: { xs: 'auto', md: 220 },
-              textDecoration: 'none',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 20px 36px rgba(15, 36, 46, 0.38)',
-              },
-            }}
-          >
+    <>
+      <AppBar position="sticky" color="inherit">
+        <Toolbar
+          disableGutters
+          sx={{
+            width: '100%',
+            px: { xs: 2, sm: 3, md: 6 },
+            py: { xs: 1, md: 1.4 },
+            gap: 2,
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={1.25} sx={{ flexGrow: 1, minWidth: 0 }}>
             <Box
+              component={Link}
+              to="/"
               sx={{
-                width: { xs: 32, sm: 36, md: 42 },
-                height: { xs: 32, sm: 36, md: 42 },
-                borderRadius: '50%',
+                width: { xs: 40, sm: 44 },
+                height: { xs: 40, sm: 44 },
                 display: 'grid',
                 placeItems: 'center',
-                border: '2px solid rgba(51, 180, 172, 0.6)',
-                background: 'rgba(51, 180, 172, 0.15)',
+                flex: '0 0 auto',
               }}
             >
-              <FilterHdrIcon sx={{ fontSize: { xs: 17, sm: 19, md: 22 } }} />
+              <AppLogo size="100%" />
             </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1.05 }}>
+            <Box sx={{ minWidth: 0 }}>
               <Typography
-                variant="subtitle2"
+                component={Link}
+                to="/"
+                variant="h6"
                 sx={{
-                  color: 'secondary.light',
-                  letterSpacing: { xs: '0.14em', md: '0.18em' },
-                  fontSize: { xs: '0.66rem', sm: '0.72rem', md: '0.8rem' },
-                  textTransform: 'uppercase',
+                  display: 'block',
+                  color: 'text.primary',
+                  fontSize: { xs: '1.08rem', sm: '1.18rem' },
+                  lineHeight: 1.15,
                 }}
               >
                 MyResCal
               </Typography>
-              <Typography
-                component="span"
+              {userLabel && (
+                <Typography
+                  variant="caption"
+                  noWrap
+                  sx={{
+                    display: { xs: 'none', sm: 'block' },
+                    color: 'text.secondary',
+                    maxWidth: 260,
+                  }}
+                >
+                  {userLabel}
+                </Typography>
+              )}
+            </Box>
+          </Stack>
+
+          {isDesktop ? (
+            <Stack direction="row" spacing={1} alignItems="center">
+              {isAuthenticated ? (
+                <>
+                  <Button component={NavLink} to="/dashboard/summary" variant="text" startIcon={<DashboardOutlinedIcon />}>
+                    {t('summary.title')}
+                  </Button>
+                  <Button component={NavLink} to="/dashboard/calendar" variant="text" startIcon={<CalendarMonthOutlinedIcon />}>
+                    {t('calendar.title')}
+                  </Button>
+                  <Button component={NavLink} to="/dashboard" end variant="text" startIcon={<ListAltOutlinedIcon />}>
+                    {t('reservationList.title')}
+                  </Button>
+                  <Button component={NavLink} to="/dashboard/add" variant="contained" color="primary">
+                    {t('navbar.addReservation')}
+                  </Button>
+                  <Button component={NavLink} to="/dashboard/settings" variant="outlined">
+                    {t('navbar.settings')}
+                  </Button>
+                  {renderLanguageButton()}
+                  <Button variant="outlined" onClick={handleLogout} disabled={isLoggingOut}>
+                    {isLoggingOut ? t('navbar.loggingOut') : t('navbar.logout')}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button component={NavLink} to="/login" variant="outlined">
+                    {t('navbar.login')}
+                  </Button>
+                  <Button component={NavLink} to="/register" variant="contained">
+                    {t('navbar.register')}
+                  </Button>
+                  {renderLanguageButton()}
+                </>
+              )}
+            </Stack>
+          ) : (
+            <Stack direction="row" spacing={1} alignItems="center">
+              {renderLanguageButton({ sx: { minWidth: 48, px: 1.5 } })}
+              <IconButton
+                onClick={() => setMenuOpen(true)}
+                aria-label="open navigation"
                 sx={{
-                  fontFamily: 'var(--app-font-script)',
-                  fontSize: { xs: '0.92rem', sm: '1.02rem', md: '1rem' },
-                  color: 'info.light',
-                  mt: { xs: 0.2, md: 0.4 },
+                  color: 'text.primary',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  backgroundColor: '#FFFFFF',
                 }}
               >
-                {brandTagline}
-              </Typography>
-            </Box>
-          </Box>
-          {userLabel && isDesktop && (
-            <Typography
-              variant="body2"
-              sx={{
-                color: 'rgba(250, 247, 240, 0.85)',
-                fontSize: '0.95rem',
-                letterSpacing: '0.08em',
-              }}
-            >
-              {userLabel}
-            </Typography>
+                <MenuIcon />
+              </IconButton>
+            </Stack>
           )}
-        </Stack>
-
-        {isDesktop ? (
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            {isAuthenticated ? (
-              <>
-                <Button
-                  component={NavLink}
-                  to="/dashboard"
-                  variant="contained"
-                  color="info"
-                  sx={{
-                    background: 'linear-gradient(135deg, rgba(51, 180, 172, 0.85), rgba(22, 96, 90, 0.95))',
-                    '&.active': {
-                      boxShadow: '0 0 0 2px rgba(250, 247, 240, 0.6)',
-                    },
-                  }}
-                >
-                  {t('navbar.allReservations')}
-                </Button>
-                <Button
-                  component={NavLink}
-                  to="/dashboard/add"
-                  variant="outlined"
-                  color="inherit"
-                  sx={{
-                    borderColor: 'rgba(250, 247, 240, 0.45)',
-                    color: 'rgba(250, 247, 240, 0.85)',
-                    '&.active': {
-                      backgroundColor: 'rgba(250, 247, 240, 0.16)',
-                      borderColor: 'rgba(250, 247, 240, 0.6)',
-                    },
-                  }}
-                >
-                  {t('navbar.addReservation')}
-                </Button>
-                <Button
-                  component={NavLink}
-                  to="/dashboard/settings"
-                  variant="outlined"
-                  color="inherit"
-                  sx={{
-                    borderColor: 'rgba(250, 247, 240, 0.45)',
-                    color: 'rgba(250, 247, 240, 0.85)',
-                    '&.active': {
-                      backgroundColor: 'rgba(250, 247, 240, 0.16)',
-                      borderColor: 'rgba(250, 247, 240, 0.6)',
-                    },
-                  }}
-                >
-                  {t('navbar.settings')}
-                </Button>
-                {renderLanguageButton()}
-                <Button
-                  variant="outlined"
-                  color="inherit"
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  sx={authActionButtonSx}
-                >
-                  {isLoggingOut ? t('navbar.loggingOut') : t('navbar.logout')}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  component={NavLink}
-                  to="/login"
-                  color="inherit"
-                  variant="outlined"
-                  sx={authActionButtonSx}
-                >
-                  {t('navbar.login')}
-                </Button>
-                <Button component={NavLink} to="/register" color="inherit" variant="outlined">
-                  {t('navbar.register')}
-                </Button>
-                {renderLanguageButton()}
-              </>
-            )}
-          </Stack>
-        ) : (
-          <Stack direction="row" spacing={1} alignItems="center">
-            {renderLanguageButton({ sx: { minWidth: 'auto' } })}
-            <IconButton
-              color="inherit"
-              onClick={() => setMenuOpen(true)}
-              aria-label="open navigation"
-              sx={{
-                border: '1px solid rgba(250, 247, 240, 0.35)',
-                backgroundColor: 'rgba(250, 247, 240, 0.08)',
-              }}
-            >
-              <MenuIcon />
-            </IconButton>
-          </Stack>
-        )}
-      </Toolbar>
+        </Toolbar>
+      </AppBar>
 
       <Drawer
         anchor="right"
@@ -311,95 +210,71 @@ export default function Navbar() {
         PaperProps={{
           sx: {
             width: 320,
-            background: 'rgba(251, 247, 240, 0.96)',
-            backdropFilter: 'blur(14px)',
-            borderLeft: '1px solid rgba(195, 111, 43, 0.28)',
-            boxShadow: '-20px 0 45px rgba(15, 36, 46, 0.18)',
+            maxWidth: '88vw',
+            background: '#FFFFFF',
+            borderLeft: '1px solid',
+            borderColor: 'divider',
+            boxShadow: '-18px 0 46px rgba(16, 42, 51, 0.14)',
           },
         }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 3,
-              py: 2.5,
-            }}
-          >
-            <Typography variant="subtitle1" sx={{ letterSpacing: '0.18rem' }}>
-              MyResCal
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2.5 }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <AppLogo size={36} />
+              <Typography variant="h6">MyResCal</Typography>
+            </Stack>
             <IconButton onClick={() => setMenuOpen(false)} aria-label="close navigation">
               <CloseIcon />
             </IconButton>
           </Box>
           {userLabel && (
-            <Typography variant="body2" sx={{ px: 3, pb: 1, color: 'text.secondary' }}>
+            <Typography variant="body2" sx={{ px: 3, pb: 1.5, color: 'text.secondary' }}>
               {userLabel}
             </Typography>
           )}
           <Divider />
 
-          <List sx={{ flexGrow: 1, px: 1 }}>
+          <List sx={{ flexGrow: 1, px: 1.5, py: 1.5 }}>
             {drawerNavItems.map((item) => (
               <ListItem disablePadding key={item.key}>
                 <ListItemButton
                   component={NavLink}
                   to={item.to}
+                  end={item.end}
                   onClick={() => setMenuOpen(false)}
                   sx={{
-                    borderRadius: 16,
-                    px: 2.5,
+                    borderRadius: 1.5,
+                    px: 2,
                     py: 1.5,
-                    mt: 1.5,
+                    mb: 0.75,
                     '&.active': {
-                      backgroundColor: 'rgba(51, 180, 172, 0.18)',
-                      boxShadow: 'inset 0 0 0 1px rgba(31, 60, 74, 0.35)',
+                      backgroundColor: 'success.light',
+                      color: 'primary.main',
                     },
                   }}
                 >
                   <ListItemText
                     primary={item.label}
-                    primaryTypographyProps={{ letterSpacing: '0.12rem', textTransform: 'uppercase' }}
+                    primaryTypographyProps={{ fontWeight: 700 }}
                   />
                 </ListItemButton>
               </ListItem>
             ))}
           </List>
 
-          <Box sx={{ px: 3, pb: 3, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Box sx={{ px: 3, pb: 3, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
             {renderLanguageButton({ fullWidth: true })}
             {isAuthenticated ? (
-              <Button
-                variant="outlined"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                fullWidth
-                sx={drawerAuthActionButtonSx}
-              >
+              <Button variant="outlined" onClick={handleLogout} disabled={isLoggingOut} fullWidth>
                 {isLoggingOut ? t('navbar.loggingOut') : t('navbar.logout')}
               </Button>
             ) : (
               <>
-                <Button
-                  component={NavLink}
-                  to="/login"
-                  variant="outlined"
-                  onClick={() => setMenuOpen(false)}
-                  fullWidth
-                  sx={drawerAuthActionButtonSx}
-                >
+                <Button component={NavLink} to="/login" variant="outlined" onClick={() => setMenuOpen(false)} fullWidth>
                   {t('navbar.login')}
                 </Button>
-                <Button
-                  component={NavLink}
-                  to="/register"
-                  variant="outlined"
-                  onClick={() => setMenuOpen(false)}
-                  fullWidth
-                >
+                <Button component={NavLink} to="/register" variant="contained" onClick={() => setMenuOpen(false)} fullWidth>
                   {t('navbar.register')}
                 </Button>
               </>
@@ -407,6 +282,42 @@ export default function Navbar() {
           </Box>
         </Box>
       </Drawer>
-    </AppBar>
+
+      {!isDesktop && isAuthenticated ? (
+        <Box sx={mobileNavSx}>
+          <Fab
+            color="primary"
+            aria-label={t('navbar.addReservation')}
+            onClick={() => navigate('/dashboard/add')}
+            sx={{
+              position: 'absolute',
+              left: '50%',
+              top: -28,
+              transform: 'translateX(-50%)',
+              width: 58,
+              height: 58,
+              boxShadow: '0 16px 30px rgba(15, 76, 79, 0.3)',
+            }}
+          >
+            <AddIcon />
+          </Fab>
+          <BottomNavigation
+            showLabels
+            value={activeMobileTab}
+            onChange={(_event, value) => {
+              if (value === 'calendar') {
+                navigate('/dashboard/calendar');
+                return;
+              }
+              navigate('/dashboard');
+            }}
+          >
+            <BottomNavigationAction label={t('calendar.title')} value="calendar" icon={<CalendarMonthOutlinedIcon />} />
+            <BottomNavigationAction disabled label="" value="spacer" icon={<Box sx={{ width: 58 }} />} />
+            <BottomNavigationAction label={t('reservationList.title')} value="reservations" icon={<ListAltOutlinedIcon />} />
+          </BottomNavigation>
+        </Box>
+      ) : null}
+    </>
   );
 }

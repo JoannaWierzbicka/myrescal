@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MyResCal</string>
+    <string name="title_activity_main">MyResCal</string>
+    <string name="package_name">com.myrescal.app</string>
+    <string name="custom_url_scheme">com.myrescal.app</string>
+</resources>

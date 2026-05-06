@@ -7,9 +7,9 @@ import {
   Card,
   CardActions,
   CardContent,
+  Chip,
   Divider,
   IconButton,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import { format } from 'date-fns';
@@ -55,58 +55,52 @@ function ReservationCard({ reservation, onEdit, onDelete, onView, disabled = fal
       sx={{
         position: 'relative',
         height: '100%',
-        width: { xs: 'min(100%, 320px)', sm: 320 },
+        width: { xs: '100%', sm: 320 },
         maxWidth: '100%',
         boxSizing: 'border-box',
         cursor: disabled ? 'not-allowed' : 'pointer',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        overflow: 'visible',
-        border: '2px solid rgba(195, 111, 43, 0.42)',
-        background: 'linear-gradient(165deg, #fbf5ea 0%, #f0e1c8 100%)',
+        overflow: 'hidden',
+        border: '1px solid',
+        borderColor: 'divider',
+        background: '#FFFFFF',
         transition: 'transform 0.25s ease, box-shadow 0.3s ease',
         '&:hover': {
-          transform: disabled ? 'none' : 'translateY(-10px)',
+          transform: disabled ? 'none' : 'translateY(-4px)',
           boxShadow: disabled
             ? 'none'
-            : '0 32px 48px rgba(25, 41, 49, 0.22)',
+            : '0 22px 42px rgba(16, 42, 51, 0.12)',
         },
       }}
       elevation={0}
     >
-      <Tooltip title={statusLabel} arrow>
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '14px',
-            right: '14px',
-            zIndex: 2,
-            width: '16px',
-            height: '16px',
-            borderRadius: '50%',
-            backgroundColor: statusMeta.color,
-          }}
-        />
-      </Tooltip>
-
       <CardContent
         sx={{
           position: 'relative',
           zIndex: 1,
           display: 'grid',
-          gap: 2,
-          pt: { xs: 2.5, sm: 3 },
+          gap: 1.75,
+          pt: { xs: 2.25, sm: 2.5 },
           pb: { xs: 6.5, sm: 7 },
-          px: { xs: 3, sm: 4 },
+          px: { xs: 2.25, sm: 3 },
         }}
       >
+        <Chip
+          label={statusLabel}
+          size="small"
+          sx={{
+            justifySelf: 'start',
+            backgroundColor: statusMeta.background,
+            color: statusMeta.color,
+          }}
+        />
         <Box>
           <Typography
             variant="h6"
             sx={{
-              fontSize: '1.4rem',
-              letterSpacing: '0.08rem',
+              fontSize: '1.1rem',
               width: '100%',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -118,7 +112,7 @@ function ReservationCard({ reservation, onEdit, onDelete, onView, disabled = fal
         </Box>
         <Divider />
         <Box sx={{ display: 'grid', gap: 1.5 }}>
-          <Typography variant="body1">
+          <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
             {t('reservationCard.room')} {roomName}
           </Typography>
           <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>

@@ -1,2 +1,17 @@
 # Local database backup artifacts
 /backups/
+
+# Local environment overrides
+.env.local
+.env.*.local
+client/.env.local
+client/.env.*.local
+server/.env.local
+server/.env.*.local
+
+# Android/Capacitor local build artifacts
+client/android/.gradle/
+client/android/.idea/
+client/android/local.properties
+client/android/build/
+client/android/app/build/

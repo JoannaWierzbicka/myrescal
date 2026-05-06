@@ -10,9 +10,12 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
+import { Capacitor } from '@capacitor/core';
 import { useLocale } from '../context/LocaleContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { getPendingCount, subscribeToNetworkActivity } from '../api/client.js';
 import { useGlobalError } from '../context/ErrorContext.jsx';
+import { useAndroidBackButton } from '../mobile/useAndroidBackButton.js';
 
 const WAKEUP_NOTICE_DELAY_MS = 4000;
 const SLOW_NOTICE_DELAY_MS = 60000;
@@ -30,9 +33,15 @@ export default function Layout() {
   const networkTimersRef = useRef({ wakeup: null, slow: null });
   const wasNetworkActiveRef = useRef(false);
   const { t } = useLocale();
+  const { isAuthenticated } = useAuth();
   const { errorMessage, retryCallback, clearError } = useGlobalError();
   const hasGlobalError = Boolean(errorMessage);
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isPublicHome = location.pathname === '/' && !isAuthenticated;
+  const isNativeApp = Capacitor.isNativePlatform();
+  const isNativePublicHome = isPublicHome && isNativeApp;
+
+  useAndroidBackButton();
 
   const clearNetworkTimers = useCallback(() => {
     if (networkTimersRef.current.wakeup) {
@@ -129,6 +138,7 @@ export default function Layout() {
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
+          backgroundColor: isNativePublicHome ? '#FAF7F0' : 'transparent',
         }}
       >
         <Navbar />
@@ -139,14 +149,17 @@ export default function Layout() {
             flexGrow: 1,
             display: 'flex',
             alignItems: isAuthPage ? 'center' : 'stretch',
-            pt: { xs: 8, sm: 10, md: 12 },
-            pb: { xs: 10, md: 12 },
-            px: { xs: 1.5, sm: 2, md: 0 },
+            pt: isNativePublicHome ? { xs: 1, sm: 2, md: 5 } : { xs: 2, sm: 3, md: 5 },
+            pb: isNativePublicHome ? { xs: 2, sm: 3, md: 8 } : { xs: 12, md: 8 },
+            px: { xs: 0, sm: 2, md: 0 },
+            backgroundColor: isNativePublicHome ? '#FAF7F0' : 'transparent',
             '&::before': {
               content: '""',
               position: 'absolute',
               inset: 0,
-              background: 'radial-gradient(120% 90% at 50% -10%, rgba(36, 78, 96, 0.14) 0%, transparent 70%)',
+              background: isNativePublicHome
+                ? 'none'
+                : 'linear-gradient(180deg, rgba(191, 230, 213, 0.2) 0%, rgba(251, 248, 241, 0) 42%)',
               pointerEvents: 'none',
             },
           }}
@@ -155,12 +168,11 @@ export default function Layout() {
             maxWidth={isAuthPage ? 'sm' : 'lg'}
             sx={{
               position: 'relative',
-              px: { xs: 2.5, sm: 3.5, md: 5 },
-              py: { xs: 2, sm: 3 },
-              borderRadius: isAuthPage ? 0 : { xs: 1, md: 1 },
-              backdropFilter: isAuthPage ? 'none' : 'blur(8px)',
-              backgroundColor: isAuthPage ? 'transparent' : 'rgba(251, 247, 240, 0.82)',
-              boxShadow: isAuthPage ? 'none' : '0 32px 80px rgba(21, 40, 50, 0.2)',
+              px: { xs: 2, sm: 3, md: 5 },
+              py: isNativePublicHome ? { xs: 0, sm: 1.5, md: 4 } : { xs: 1.5, sm: 2.5, md: 4 },
+              borderRadius: 0,
+              backgroundColor: 'transparent',
+              boxShadow: 'none',
               flexGrow: 1,
             }}
           >
@@ -170,9 +182,10 @@ export default function Layout() {
         <Box
           component="footer"
           sx={{
+            display: { xs: 'none', md: 'block' },
             mt: { xs: 6, md: 10 },
             py: { xs: 4, md: 5 },
-            background: 'linear-gradient(180deg, rgba(31,60,74,0) 0%, rgba(31,60,74,0.18) 100%)',
+            background: 'transparent',
           }}
         >
           <Container maxWidth="lg" sx={{ px: { xs: 2.5, sm: 3.5, md: 5 } }}>

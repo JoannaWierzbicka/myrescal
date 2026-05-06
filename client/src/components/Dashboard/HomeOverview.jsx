@@ -11,7 +11,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import ReservationCalendar from '../ReservationCalendar.jsx';
 import ReservationList from '../ReservationList.jsx';
@@ -30,8 +30,10 @@ import { useLocale } from '../../context/LocaleContext.jsx';
 
 const formatDateInput = (date) => format(date, 'yyyy-MM-dd');
 
-export default function HomeOverview() {
+export default function HomeOverview({ view = 'reservations' }) {
   const { t } = useLocale();
+  const navigate = useNavigate();
+  const isCalendarView = view === 'calendar';
   const [properties, setProperties] = useState([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [rooms, setRooms] = useState([]);
@@ -237,6 +239,11 @@ export default function HomeOverview() {
     });
   };
 
+  const openReservationDetail = (reservation) => {
+    if (!reservation?.id) return;
+    navigate(`/dashboard/detail/${reservation.id}`);
+  };
+
   const handleCreate = async (values) => {
     const payload = {
       ...values,
@@ -310,9 +317,9 @@ export default function HomeOverview() {
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 3,
-          px: { xs: 1, sm: 1.5, md: 2 },
-          pt: { xs: 1, sm: 1.5, md: 2 },
+          gap: { xs: 2.5, md: 3 },
+          px: { xs: 0, sm: 1, md: 2 },
+          pt: { xs: 0.5, sm: 1.5, md: 2 },
           opacity: showLoaderOverlay ? 0.35 : 1,
           pointerEvents: showLoaderOverlay ? 'none' : 'auto',
           transition: 'opacity 0.3s ease',
@@ -321,15 +328,15 @@ export default function HomeOverview() {
       <Stack
         direction={{ xs: 'column', md: 'row' }}
         alignItems={{ xs: 'stretch', md: 'center' }}
-        spacing={{ xs: 2.5, md: 2 }}
+        spacing={{ xs: 1.75, md: 2 }}
         sx={{ flexWrap: { md: 'wrap' }, rowGap: { md: 2 } }}
       >
         <Box sx={{ flexGrow: 1 }}>
-          <Typography variant="h4" component="h1">
-            {t('dashboard.title')}
+          <Typography variant="h4" component="h1" sx={{ color: 'primary.dark', mb: 0.5 }}>
+            {isCalendarView ? t('calendar.title') : t('reservationList.title')}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {t('dashboard.subtitle')}
+            {isCalendarView ? t('calendar.subtitle') : t('reservationList.subtitle')}
           </Typography>
         </Box>
 
@@ -338,7 +345,7 @@ export default function HomeOverview() {
           sx={{
             minWidth: { xs: '100%', sm: 260, md: 240 },
             maxWidth: { xs: '100%', md: 260 },
-            mb: { xs: 1.5, md: 0 }
+            mb: { xs: 0.5, md: 0 }
           }}
           disabled={loadingProperties || properties.length === 0}
         >
@@ -373,13 +380,14 @@ export default function HomeOverview() {
         </Alert>
       ) : (
         <>
+          {isCalendarView ? (
           <Box>
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
               justifyContent="space-between"
               alignItems={{ xs: 'flex-start', sm: 'center' }}
-              spacing={{ xs: 2, sm: 0 }}
-              mb={2.5}
+              spacing={{ xs: 1.5, sm: 0 }}
+              mb={2}
             >
               <Typography variant="h6">
                 {`${t('dashboard.availability')} ${
@@ -397,12 +405,7 @@ export default function HomeOverview() {
                   })
                 }
                 sx={{
-                  width: { xs: 'auto', sm: 'auto' },
-                  px: { xs: 3.2, sm: 4 },
-                  py: { xs: 0.95, sm: 1.1 },
-                  letterSpacing: { xs: '0.16em', sm: '0.18em' },
-                  alignSelf: { xs: 'center', sm: 'flex-start' },
-                  mb: { xs: 3, sm: 0 },
+                  display: { xs: 'none', sm: 'inline-flex' },
                 }}
               >
                 {t('dashboard.addReservation')}
@@ -420,12 +423,24 @@ export default function HomeOverview() {
                     {roomsError || reservationsError}
                   </Alert>
                 )}
-                <Box sx={{ width: '100%', overflow: 'hidden', mt: { xs: 2, sm: 1.5 } }}>
+                <Box
+                  sx={{
+                    width: '100%',
+                    overflow: 'hidden',
+                    mt: { xs: 1.5, sm: 1.5 },
+                    p: { xs: 1.5, sm: 2 },
+                    borderRadius: 1.5,
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    boxShadow: '0 18px 42px rgba(16, 42, 51, 0.08)',
+                  }}
+                >
                   <ReservationCalendar
                     rooms={roomsForCalendar}
                     reservations={reservations}
                     onDayClick={handleDayClick}
-                    onReservationSelect={openEditDialog}
+                    onReservationSelect={openReservationDetail}
                     onRoomChange={(roomId) => {
                       const targetRoom = rooms.find((room) => room.id === roomId);
                       if (targetRoom?.property_id) {
@@ -442,7 +457,9 @@ export default function HomeOverview() {
               </>
             )}
           </Box>
+          ) : null}
 
+          {!isCalendarView ? (
           <ReservationList
             reservations={filteredReservations}
             onDeleteReservation={handleDelete}
@@ -459,6 +476,7 @@ export default function HomeOverview() {
             roomFilterId={roomFilterId}
             onRoomFilterChange={setRoomFilterId}
           />
+          ) : null}
         </>
       )}
 

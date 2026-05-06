@@ -17,7 +17,10 @@ import {
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import { FaSave, FaTimes } from 'react-icons/fa';
 import { useLocale } from '../context/LocaleContext.jsx';
@@ -144,6 +147,53 @@ const computeRemainingAmount = (totalPrice, depositAmount) =>
 
 const hasValue = (value) => value !== undefined && value !== null && String(value).trim() !== '';
 
+const formatDateForDisplay = (value) => {
+  const parts = String(value || '').split('-');
+  if (parts.length !== 3) return '';
+  const [year, month, day] = parts;
+  if (!year || !month || !day) return '';
+  return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+};
+
+const formatDateDisplayInput = (value) => {
+  const raw = String(value || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return formatDateForDisplay(raw);
+  }
+
+  const digits = raw.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+};
+
+const parseDisplayDate = (value) => {
+  const normalized = String(value || '').trim();
+  const match = normalized.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return '';
+
+  const [, dayRaw, monthRaw, yearRaw] = match;
+  const day = Number(dayRaw);
+  const month = Number(monthRaw);
+  const year = Number(yearRaw);
+
+  if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year)) return '';
+
+  const utc = Date.UTC(year, month - 1, day);
+  const parsed = new Date(utc);
+
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+    return '';
+  }
+
+  return `${yearRaw}-${monthRaw}-${dayRaw}`;
+};
+
 const isValidEmail = (value) => {
   const normalized = String(value || '').trim();
   if (!normalized) return true;
@@ -240,6 +290,14 @@ const toFormValues = (values = {}) => {
   return mapped;
 };
 
+const serializeFormValues = (values = {}) =>
+  JSON.stringify(
+    Object.keys(DEFAULT_FORM_VALUES).reduce((acc, key) => {
+      acc[key] = values[key] ?? '';
+      return acc;
+    }, {}),
+  );
+
 const toPayload = (values, totalPrice) => {
   const normalizeNumber = (value) => {
     if (value === undefined || value === null || value === '') return null;
@@ -304,13 +362,25 @@ function ReservationFormDialog({
   loadingProperties = false,
   loadingRooms = false,
   dataError,
-  minDate,
   existingReservations = [],
   reservationId,
 }) {
   const { t, language } = useLocale();
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const startDatePickerRef = useRef(null);
+  const endDatePickerRef = useRef(null);
   const [formValues, setFormValues] = useState(() => toFormValues(initialValues));
+  const [baselineValues, setBaselineValues] = useState(() => toFormValues(initialValues));
+  const [dateDisplayValues, setDateDisplayValues] = useState(() => {
+    const values = toFormValues(initialValues);
+    return {
+      start_date: formatDateForDisplay(values.start_date),
+      end_date: formatDateForDisplay(values.end_date),
+    };
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
   const [error, setError] = useState(null);
   const isMountedRef = useRef(true);
   const isDepositPaid = formValues.status === 'deposit_paid';
@@ -320,7 +390,14 @@ function ReservationFormDialog({
   }, []);
 
   useEffect(() => {
-    setFormValues(toFormValues(initialValues));
+    const nextValues = toFormValues(initialValues);
+    setFormValues(nextValues);
+    setBaselineValues(nextValues);
+    setDateDisplayValues({
+      start_date: formatDateForDisplay(nextValues.start_date),
+      end_date: formatDateForDisplay(nextValues.end_date),
+    });
+    setConfirmCloseOpen(false);
   }, [initialValues]);
 
   useEffect(() => {
@@ -329,10 +406,14 @@ function ReservationFormDialog({
       if (prev.room_id && rooms.some((room) => room.id === prev.room_id)) {
         return prev;
       }
-      return {
+      const nextValues = {
         ...prev,
         room_id: rooms[0].id,
       };
+      setBaselineValues((currentBaseline) =>
+        serializeFormValues(prev) === serializeFormValues(currentBaseline) ? nextValues : currentBaseline,
+      );
+      return nextValues;
     });
   }, [rooms]);
 
@@ -358,7 +439,12 @@ function ReservationFormDialog({
   );
 
   const computedTotalPrice = useMemo(
-    () => computeAutomaticTotalPrice(formValues),
+    () =>
+      computeAutomaticTotalPrice({
+        start_date: formValues.start_date,
+        end_date: formValues.end_date,
+        nightly_rate: formValues.nightly_rate,
+      }),
     [formValues.end_date, formValues.nightly_rate, formValues.start_date],
   );
 
@@ -465,6 +551,11 @@ function ReservationFormDialog({
     );
   }, [formValues, dateConflict, formValidationError]);
 
+  const hasUnsavedChanges = useMemo(
+    () => serializeFormValues(formValues) !== serializeFormValues(baselineValues),
+    [baselineValues, formValues],
+  );
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormValues((prev) => ({
@@ -473,30 +564,79 @@ function ReservationFormDialog({
     }));
   };
 
+  const handleDateDisplayChange = (event) => {
+    const { name, value } = event.target;
+    const displayValue = formatDateDisplayInput(value);
+    const parsedValue = parseDisplayDate(displayValue);
+
+    setDateDisplayValues((prev) => ({
+      ...prev,
+      [name]: displayValue,
+    }));
+    setFormValues((prev) => ({
+      ...prev,
+      [name]: parsedValue,
+    }));
+  };
+
+  const handleNativeDateChange = (event) => {
+    const { name, value } = event.target;
+    setFormValues((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    setDateDisplayValues((prev) => ({
+      ...prev,
+      [name]: formatDateForDisplay(value),
+    }));
+  };
+
+  const openNativeDatePicker = (ref) => {
+    const input = ref.current;
+    if (!input) return;
+
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+      return;
+    }
+
+    input.click();
+  };
+
+  const requestClose = () => {
+    if (isSubmitting) return;
+
+    if (hasUnsavedChanges) {
+      setConfirmCloseOpen(true);
+      return;
+    }
+
+    onCancel?.();
+  };
+
   const handleDialogClose = (_event, reason) => {
     if (reason === 'backdropClick') {
       return;
     }
-    onCancel?.();
+    requestClose();
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
+  const submitForm = async () => {
     if (formValidationError) {
       setError(formValidationError);
-      return;
+      return false;
     }
 
     if (dateConflict) {
       setError(t('reservationForm.errors.conflict'));
-      return;
+      return false;
     }
 
     setIsSubmitting(true);
     setError(null);
     try {
       await onSubmit(toPayload(formValues, computedTotalPrice));
+      return true;
     } catch (submissionError) {
       if (
         isApiErrorCode(submissionError, 'RESERVATION_OVERLAP')
@@ -506,6 +646,7 @@ function ReservationFormDialog({
       } else {
         setError(submissionError?.message || t('reservationForm.errors.generic'));
       }
+      return false;
     } finally {
       if (isMountedRef.current) {
         setIsSubmitting(false);
@@ -513,32 +654,46 @@ function ReservationFormDialog({
     }
   };
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    await submitForm();
+  };
+
+  const handleConfirmSave = async () => {
+    const success = await submitForm();
+    if (!success && isMountedRef.current) {
+      setConfirmCloseOpen(false);
+    }
+  };
+
   return (
-    <Dialog open onClose={handleDialogClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ pr: 7 }}>
+    <>
+    <Dialog open onClose={handleDialogClose} maxWidth="sm" fullWidth fullScreen={fullScreen}>
+      <DialogTitle sx={{ pr: 7, color: 'primary.dark' }}>
         {title}
         <IconButton
           aria-label={t('reservationForm.close')}
-          onClick={onCancel}
+          onClick={requestClose}
           sx={{ position: 'absolute', right: 10, top: 10 }}
         >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      <DialogContent dividers>
+      <DialogContent dividers sx={{ backgroundColor: '#FAF7F0', px: { xs: 2, sm: 3 } }}>
         <Box
           component="form"
           onSubmit={handleSubmit}
-          sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}
+          sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1, pb: { xs: 2, sm: 0 } }}
         >
           <Box
             sx={{
-              borderRadius: '12px',
-              border: '1px solid rgba(195, 111, 43, 0.35)',
-              backgroundColor: 'rgba(251, 245, 234, 0.8)',
-              px: { xs: 2.5, sm: 3.5 },
-              py: { xs: 2.5, sm: 3 },
-              boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.35)',
+              borderRadius: 1.5,
+              border: '1px solid',
+              borderColor: 'divider',
+              backgroundColor: '#FFFFFF',
+              px: { xs: 2, sm: 3 },
+              py: { xs: 2, sm: 2.5 },
+              boxShadow: '0 14px 30px rgba(16, 42, 51, 0.06)',
             }}
           >
             <Typography variant="subtitle2" sx={{ mb: 2 }}>
@@ -587,44 +742,111 @@ function ReservationFormDialog({
 
           <Box
             sx={{
-              borderRadius: '12px',
-              border: '1px solid rgba(195, 111, 43, 0.35)',
-              backgroundColor: 'rgba(251, 245, 234, 0.92)',
-              px: { xs: 2.5, sm: 3.5 },
-              py: { xs: 2.5, sm: 3 },
-              boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.35)',
+              borderRadius: 1.5,
+              border: '1px solid',
+              borderColor: 'divider',
+              backgroundColor: '#FFFFFF',
+              px: { xs: 2, sm: 3 },
+              py: { xs: 2, sm: 2.5 },
+              boxShadow: '0 14px 30px rgba(16, 42, 51, 0.06)',
             }}
           >
             <Typography variant="subtitle2" sx={{ mb: 2 }}>
               {language === 'pl' ? 'Szczegóły pobytu' : 'Stay details'}
             </Typography>
             <Stack spacing={2.5} direction={{ xs: 'column', sm: 'row' }}>
-              <TextField
-                label={t('reservationForm.fields.startDate')}
-                name="start_date"
-                type="date"
-                value={formValues.start_date}
-                onChange={handleChange}
-                required
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                inputProps={{ min: minDate }}
-                error={dateConflict}
-                helperText={dateConflict ? t('reservationForm.errors.conflict') : undefined}
-              />
-              <TextField
-                label={t('reservationForm.fields.endDate')}
-                name="end_date"
-                type="date"
-                value={formValues.end_date}
-                onChange={handleChange}
-                required
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                inputProps={{ min: formValues.start_date || minDate }}
-                error={dateConflict}
-                helperText={dateConflict ? t('reservationForm.errors.conflict') : undefined}
-              />
+              <Box sx={{ position: 'relative', width: '100%' }}>
+                <TextField
+                  label={t('reservationForm.fields.startDate')}
+                  name="start_date"
+                  type="text"
+                  value={dateDisplayValues.start_date}
+                  onChange={handleDateDisplayChange}
+                  required
+                  fullWidth
+                  placeholder="DD/MM/YYYY"
+                  inputProps={{ inputMode: 'numeric', maxLength: 10 }}
+                  InputProps={{
+                    endAdornment: (
+                      <IconButton
+                        edge="end"
+                        aria-label={t('reservationForm.fields.startDate')}
+                        onClick={() => openNativeDatePicker(startDatePickerRef)}
+                      >
+                        <CalendarMonthOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    ),
+                  }}
+                  error={dateConflict}
+                  helperText={dateConflict ? t('reservationForm.errors.conflict') : 'DD/MM/YYYY'}
+                />
+                <Box
+                  component="input"
+                  ref={startDatePickerRef}
+                  name="start_date"
+                  type="date"
+                  value={formValues.start_date}
+                  min={undefined}
+                  onChange={handleNativeDateChange}
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  sx={{
+                    position: 'absolute',
+                    right: 8,
+                    bottom: 8,
+                    width: 1,
+                    height: 1,
+                    opacity: 0,
+                    pointerEvents: 'none',
+                  }}
+                />
+              </Box>
+              <Box sx={{ position: 'relative', width: '100%' }}>
+                <TextField
+                  label={t('reservationForm.fields.endDate')}
+                  name="end_date"
+                  type="text"
+                  value={dateDisplayValues.end_date}
+                  onChange={handleDateDisplayChange}
+                  required
+                  fullWidth
+                  placeholder="DD/MM/YYYY"
+                  inputProps={{ inputMode: 'numeric', maxLength: 10 }}
+                  InputProps={{
+                    endAdornment: (
+                      <IconButton
+                        edge="end"
+                        aria-label={t('reservationForm.fields.endDate')}
+                        onClick={() => openNativeDatePicker(endDatePickerRef)}
+                      >
+                        <CalendarMonthOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    ),
+                  }}
+                  error={dateConflict}
+                  helperText={dateConflict ? t('reservationForm.errors.conflict') : 'DD/MM/YYYY'}
+                />
+                <Box
+                  component="input"
+                  ref={endDatePickerRef}
+                  name="end_date"
+                  type="date"
+                  value={formValues.end_date}
+                  min={formValues.start_date || undefined}
+                  onChange={handleNativeDateChange}
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  sx={{
+                    position: 'absolute',
+                    right: 8,
+                    bottom: 8,
+                    width: 1,
+                    height: 1,
+                    opacity: 0,
+                    pointerEvents: 'none',
+                  }}
+                />
+              </Box>
             </Stack>
 
             <Stack spacing={2.5} direction={{ xs: 'column', sm: 'row' }} sx={{ mt: STAY_DETAILS_ROW_MARGIN }}>
@@ -754,12 +976,13 @@ function ReservationFormDialog({
 
           <Box
             sx={{
-              borderRadius: '12px',
-              border: '1px solid rgba(195, 111, 43, 0.35)',
-              backgroundColor: 'rgba(251, 245, 234, 0.8)',
-              px: { xs: 2.5, sm: 3.5 },
-              py: { xs: 2.5, sm: 3 },
-              boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.35)',
+              borderRadius: 1.5,
+              border: '1px solid',
+              borderColor: 'divider',
+              backgroundColor: '#FFFFFF',
+              px: { xs: 2, sm: 3 },
+              py: { xs: 2, sm: 2.5 },
+              boxShadow: '0 14px 30px rgba(16, 42, 51, 0.06)',
             }}
           >
             <Typography variant="subtitle2" sx={{ mb: 2 }}>
@@ -830,12 +1053,13 @@ function ReservationFormDialog({
 
           <Box
             sx={{
-              borderRadius: '12px',
-              border: '1px solid rgba(195, 111, 43, 0.35)',
-              backgroundColor: 'rgba(251, 245, 234, 0.8)',
-              px: { xs: 2.5, sm: 3.5 },
-              py: { xs: 2.5, sm: 3 },
-              boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.35)',
+              borderRadius: 1.5,
+              border: '1px solid',
+              borderColor: 'divider',
+              backgroundColor: '#FFFFFF',
+              px: { xs: 2, sm: 3 },
+              py: { xs: 2, sm: 2.5 },
+              boxShadow: '0 14px 30px rgba(16, 42, 51, 0.06)',
             }}
           >
             <Typography variant="subtitle2" sx={{ mb: 2 }}>
@@ -880,12 +1104,22 @@ function ReservationFormDialog({
           </Typography>
         )}
 
-          <DialogActions sx={{ justifyContent: 'space-between', mt: 1, px: 0 }}>
+          <DialogActions
+            sx={{
+              justifyContent: 'space-between',
+              mt: 0.5,
+              px: 0,
+              gap: 1,
+              flexDirection: { xs: 'column-reverse', sm: 'row' },
+              '& > :not(style) ~ :not(style)': { ml: { xs: 0, sm: 1 } },
+            }}
+          >
             <Button
-              onClick={onCancel}
+              onClick={requestClose}
               color="secondary"
               startIcon={<FaTimes />}
-              ddisabled={isSubmitting || dateConflict || dataError}
+              disabled={isSubmitting || dateConflict || dataError}
+              fullWidth={fullScreen}
             >
               {t('reservationForm.cancel')}
             </Button>
@@ -895,6 +1129,7 @@ function ReservationFormDialog({
               color="primary"
               disabled={isSubmitting || disableSubmit}
               startIcon={<FaSave />}
+              fullWidth={fullScreen}
             >
               {isSubmitting ? submittingLabel : submitLabel}
             </Button>
@@ -902,6 +1137,69 @@ function ReservationFormDialog({
         </Box>
       </DialogContent>
     </Dialog>
+    <Dialog
+      open={confirmCloseOpen}
+      onClose={() => {
+        if (!isSubmitting) setConfirmCloseOpen(false);
+      }}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 1.5,
+          border: '1px solid',
+          borderColor: 'divider',
+          backgroundColor: '#FFFDFC',
+          boxShadow: '0 24px 58px rgba(16, 42, 51, 0.18)',
+        },
+      }}
+    >
+      <DialogTitle sx={{ color: 'primary.dark', pb: 1 }}>
+        {t('reservationForm.unsavedChanges.title')}
+      </DialogTitle>
+      <DialogContent sx={{ pt: 1 }}>
+        <Typography variant="body2" color="text.secondary">
+          {t('reservationForm.unsavedChanges.message')}
+        </Typography>
+      </DialogContent>
+      <DialogActions
+        sx={{
+          px: 3,
+          pb: 2.5,
+          pt: 1,
+          gap: 1,
+          flexDirection: { xs: 'column-reverse', sm: 'row' },
+          alignItems: 'stretch',
+          '& > :not(style) ~ :not(style)': { ml: { xs: 0, sm: 1 } },
+        }}
+      >
+        <Button
+          onClick={() => setConfirmCloseOpen(false)}
+          disabled={isSubmitting}
+          fullWidth={fullScreen}
+        >
+          {t('reservationForm.unsavedChanges.keepEditing')}
+        </Button>
+        <Button
+          onClick={onCancel}
+          color="secondary"
+          variant="outlined"
+          disabled={isSubmitting}
+          fullWidth={fullScreen}
+        >
+          {t('reservationForm.unsavedChanges.discard')}
+        </Button>
+        <Button
+          onClick={handleConfirmSave}
+          variant="contained"
+          disabled={isSubmitting || disableSubmit}
+          fullWidth={fullScreen}
+        >
+          {isSubmitting ? submittingLabel : t('reservationForm.unsavedChanges.save')}
+        </Button>
+      </DialogActions>
+    </Dialog>
+    </>
   );
 }
 

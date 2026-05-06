@@ -12,6 +12,7 @@ import EditReservation from '../components/EditReservation.jsx';
 import Home from '../components/Home.jsx';
 import Settings from '../components/Settings/Settings.jsx';
 import HomeOverview from '../components/Dashboard/HomeOverview.jsx';
+import Summary from '../components/Dashboard/Summary.jsx';
 
 import ProtectedRoute from './ProtectedRoute.jsx';
 import { loadReservation } from '../api/reservations.js';
@@ -43,7 +44,15 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <HomeOverview />,
+            element: <HomeOverview view="reservations" />,
+          },
+          {
+            path: 'calendar',
+            element: <HomeOverview view="calendar" />,
+          },
+          {
+            path: 'summary',
+            element: <Summary />,
           },
           {
             path: 'detail/:id',
