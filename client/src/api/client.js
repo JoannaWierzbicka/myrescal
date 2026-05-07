@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { authStorage } from '../context/authStorage.js';
 import { captureClientException } from '../utils/monitoring.js';
 
@@ -14,9 +15,18 @@ const normalizeBaseUrl = (url) => {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 };
 
-const API_BASE_URL = normalizeBaseUrl(
-  import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL,
-);
+const resolveApiBaseUrl = () => {
+  const webApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+  const nativeApiUrl = import.meta.env.VITE_NATIVE_API_URL;
+
+  if (Capacitor.isNativePlatform() && nativeApiUrl) {
+    return normalizeBaseUrl(nativeApiUrl);
+  }
+
+  return normalizeBaseUrl(webApiUrl);
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 let globalErrorHandler = null;
 let pendingCount = 0;
@@ -197,6 +207,24 @@ export async function apiClient(path, { method = 'GET', data, headers, signal } 
           },
         });
       }
+      throw error;
+    }
+
+    if (typeof payload === 'string') {
+      const error = new Error('Invalid API response. Check API URL configuration.');
+      error.status = 502;
+      error.code = 'INVALID_API_RESPONSE';
+      error.requestId = responseRequestId || requestId;
+      captureClientException(error, {
+        requestId: error.requestId,
+        endpoint: path,
+        status: response.status,
+        extra: {
+          method,
+          apiBaseUrl: API_BASE_URL,
+          contentType: response.headers.get('content-type') || null,
+        },
+      });
       throw error;
     }
 

@@ -74,6 +74,7 @@ Aktualny zestaw obejmuje podstawowe kontrakty HTTP, format błędów, `401`, `40
 | Zmienna | Wymagana | Opis |
 | --- | --- | --- |
 | `VITE_API_URL` | Nie | preferowany adres API, np. `/api` lub `https://api.example.com` |
+| `VITE_NATIVE_API_URL` | Nie | absolutny adres API dla aplikacji Android/Capacitor, np. `https://myrescal.onrender.com/api` |
 | `VITE_API_BASE_URL` | Nie (legacy) | fallback w kodzie, utrzymany dla kompatybilności |
 | `VITE_SENTRY_DSN` | Nie | DSN projektu Sentry dla web/mobile; brak wartości wyłącza Sentry |
 | `VITE_SENTRY_ENVIRONMENT` | Nie | środowisko Sentry dla klienta |
