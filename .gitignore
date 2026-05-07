@@ -9,6 +9,9 @@ client/.env.*.local
 server/.env.local
 server/.env.*.local
 
+# Private local planning notes
+docs/private/
+
 # Android/Capacitor local build artifacts
 client/android/.gradle/
 client/android/.idea/

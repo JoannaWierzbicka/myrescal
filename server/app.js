@@ -9,6 +9,7 @@ import authRouter from './auth/authRoutes.js';
 import reservationsRouter from './routes/reservations.js';
 import propertiesRouter from './routes/properties.js';
 import roomsRouter from './routes/rooms.js';
+import profileRouter from './routes/profile.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { requestIdMiddleware, requestLoggingMiddleware } from './middleware/requestContext.js';
 import { createHttpError } from './utils/httpError.js';
@@ -104,6 +105,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/properties', propertiesRouter);
 app.use('/api/rooms', roomsRouter);
 app.use('/api/reservations', reservationsRouter);
+app.use('/api/profile', profileRouter);
 
 app.use(express.static(path.join(__dirname, 'static')));
 

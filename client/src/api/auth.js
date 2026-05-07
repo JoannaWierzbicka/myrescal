@@ -14,14 +14,14 @@ export async function loginUser({ email, password, signal } = {}) {
   });
 }
 
-export async function registerUser({ email, password, signal } = {}) {
-  if (!email || !password) {
-    throw new Error('Email and password are required');
+export async function registerUser({ email, password, firstName, lastName, phone, companyName, signal } = {}) {
+  if (!email || !password || !firstName || !lastName) {
+    throw new Error('Email, password, first name and last name are required');
   }
 
   return apiClient(`${AUTH_ROOT}/register`, {
     method: 'POST',
-    data: { email, password },
+    data: { email, password, firstName, lastName, phone, companyName },
     signal,
   });
 }

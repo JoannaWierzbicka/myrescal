@@ -3,10 +3,11 @@
 Uruchamiaj pliki SQL w Supabase SQL Editor (schema `public`) w tej kolejności:
 
 1. `properties_rooms.sql`
-2. `reservations_rls.sql`
-3. `reservations_notes_pricing.sql`
-4. `reservations_no_overlap.sql` (najpierw sprawdź typy kolumn i wybierz właściwy wariant)
-5. `remove_confirmed_status.sql` (jeśli baza ma jeszcze stare rekordy/statusy `confirmed`)
+2. `owner_profiles.sql`
+3. `reservations_rls.sql`
+4. `reservations_notes_pricing.sql`
+5. `reservations_no_overlap.sql` (najpierw sprawdź typy kolumn i wybierz właściwy wariant)
+6. `remove_confirmed_status.sql` (jeśli baza ma jeszcze stare rekordy/statusy `confirmed`)
 
 ---
 
@@ -29,6 +30,11 @@ where table_schema='public' and table_name='reservations' and column_name in ('s
 - `properties_rooms.sql`:
   - tworzy/uzupełnia `properties`, `rooms` i powiązania z `reservations`;
   - tworzy indeksy i polityki RLS dla `properties` i `rooms`.
+
+- `owner_profiles.sql`:
+  - tworzy tabelę `owner_profiles` na dane właściciela konta;
+  - wiąże profil z `auth.users(id)`;
+  - dodaje RLS owner-based (`auth.uid() = owner_id`).
 
 - `reservations_rls.sql`:
   - włącza RLS na `reservations`;
@@ -54,6 +60,19 @@ W `server/.env` ustaw:
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `AUTH_REQUIRE_EMAIL_CONFIRMATION=true` (zalecane; backend nie zwraca sesji po rejestracji i blokuje niepotwierdzone konta)
+- `AUTH_EMAIL_REDIRECT_URL` (opcjonalnie, adres powrotu po kliknięciu linku potwierdzającego email)
 
 Legacy fallback:
 - `SUPABASE_KEY` (deprecated, tylko jako fallback dla service role).
+
+### Wymagane ustawienie Supabase Auth
+
+Aby tworzyć tylko konta z realnym adresem email, włącz potwierdzanie emaila w Supabase:
+
+1. Supabase Dashboard -> Authentication -> Providers -> Email.
+2. Włącz `Confirm email`.
+3. Ustaw `Site URL` i `Redirect URLs` na adres web app oraz docelowy adres aplikacji mobilnej/deep link, kiedy będzie gotowy.
+4. Jeśli używasz `AUTH_EMAIL_REDIRECT_URL`, dodaj ten URL do listy redirectów w Supabase.
+
+Uwaga: bez włączenia `Confirm email` Supabase może nie wysłać maila potwierdzającego. Backend domyślnie nie loguje użytkownika po rejestracji, ale wysyłka maila jest ustawieniem Supabase Auth, nie samego kodu aplikacji.

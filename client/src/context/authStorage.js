@@ -1,6 +1,7 @@
 const AUTH_STORAGE_KEYS = Object.freeze({
   user: 'booking-app:user',
   session: 'booking-app:session',
+  profile: 'booking-app:profile',
 });
 
 const safeParse = (value) => {
@@ -33,11 +34,14 @@ export const authStorage = {
   keys: AUTH_STORAGE_KEYS,
   getUser: () => readStorage(AUTH_STORAGE_KEYS.user),
   getSession: () => readStorage(AUTH_STORAGE_KEYS.session),
+  getProfile: () => readStorage(AUTH_STORAGE_KEYS.profile),
   setUser: (user) => writeStorage(AUTH_STORAGE_KEYS.user, user),
   setSession: (session) => writeStorage(AUTH_STORAGE_KEYS.session, session),
+  setProfile: (profile) => writeStorage(AUTH_STORAGE_KEYS.profile, profile),
   clear: () => {
     if (!isBrowser()) return;
     window.localStorage.removeItem(AUTH_STORAGE_KEYS.user);
     window.localStorage.removeItem(AUTH_STORAGE_KEYS.session);
+    window.localStorage.removeItem(AUTH_STORAGE_KEYS.profile);
   },
 };

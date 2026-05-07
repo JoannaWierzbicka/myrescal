@@ -260,6 +260,8 @@ export const translations = {
     auth: {
       loginTitle: 'Login',
       registerTitle: 'Register',
+      firstName: 'First name',
+      lastName: 'Last name',
       email: 'Email',
       password: 'Password',
       confirmPassword: 'Confirm password',
@@ -269,9 +271,12 @@ export const translations = {
       registerButton: 'Register',
       registerSubmitting: 'Registering...',
       registerSuccess: 'Registration successful! Please check your email to confirm your address.',
+      registerSuccessWithSpamNotice:
+        'Registration successful! Please check your email to confirm your address. During testing, the message may come from Supabase and land in spam.',
       registerSuccessAutoLogin: 'Thank you for registering! You have been logged in.',
       registerErrorExisting: 'An account with this email already exists.',
       registerErrorGeneric: 'Something went wrong during registration.',
+      emailNotConfirmed: 'Please confirm your email address before logging in.',
       confirmPasswordMismatch: 'Passwords must match.',
     },
     common: {
@@ -545,6 +550,8 @@ export const translations = {
     auth: {
       loginTitle: 'Logowanie',
       registerTitle: 'Rejestracja',
+      firstName: 'Imię',
+      lastName: 'Nazwisko',
       email: 'E-mail',
       password: 'Hasło',
       confirmPassword: 'Powtórz hasło',
@@ -554,9 +561,12 @@ export const translations = {
       registerButton: 'Zarejestruj się',
       registerSubmitting: 'Rejestracja...',
       registerSuccess: 'Rejestracja zakończona! Sprawdź e-mail i potwierdź konto.',
+      registerSuccessWithSpamNotice:
+        'Rejestracja zakończona! Sprawdź e-mail i potwierdź konto. W testach wiadomość może przyjść z Supabase i trafić do spamu.',
       registerSuccessAutoLogin: 'Dziękujemy za rejestrację! Zostałeś zalogowany.',
       registerErrorExisting: 'Konto z tym adresem e-mail już istnieje.',
       registerErrorGeneric: 'Coś poszło nie tak podczas rejestracji.',
+      emailNotConfirmed: 'Potwierdź adres e-mail przed logowaniem.',
       confirmPasswordMismatch: 'Hasła muszą być identyczne.',
     },
     common: {

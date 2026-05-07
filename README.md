@@ -47,6 +47,8 @@ npm run dev
 | `SUPABASE_KEY` | Nie (legacy) | fallback dla `SUPABASE_SERVICE_ROLE_KEY` (deprecated) |
 | `CORS_ORIGIN` | Zalecane | lista originów oddzielona przecinkami |
 | `CLIENT_ORIGIN` | Nie (legacy) | fallback dla `CORS_ORIGIN` (deprecated) |
+| `AUTH_REQUIRE_EMAIL_CONFIRMATION` | Zalecane | domyślnie wymagamy potwierdzonego emaila; ustaw `false` tylko lokalnie, jeśli chcesz pominąć ten wymóg |
+| `AUTH_EMAIL_REDIRECT_URL` | Zalecane | adres powrotu po kliknięciu linku potwierdzającego email |
 | `PORT` | Nie | domyślnie `3000` |
 | `API_RATE_LIMIT_MAX` | Nie | limit globalny `/api` |
 | `AUTH_LOGIN_RATE_LIMIT_MAX` | Nie | limit `/api/auth/login` |
@@ -74,6 +76,7 @@ where table_schema='public' and table_name='reservations' and column_name in ('s
 ## RLS: wymagane pliki SQL
 Wykonaj pliki z katalogu `server/supabase`:
 - `properties_rooms.sql`
+- `owner_profiles.sql`
 - `reservations_rls.sql`
 - `reservations_notes_pricing.sql`
 - `reservations_no_overlap.sql` (po wybraniu właściwego wariantu zgodnie z typami kolumn)
@@ -115,3 +118,10 @@ Ostrzeżenia:
 
 Pełna procedura operacyjna i plan testów restore:
 - `docs/operational/backup-restore.md`
+
+## Auth SMTP
+
+Przed produkcyjną rejestracją użytkowników skonfiguruj własny SMTP dla Supabase Auth. Domyślna wysyłka Supabase jest tylko testowa i ma niski limit.
+
+Runbook:
+- `docs/operational/auth-smtp.md`
