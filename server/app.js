@@ -14,16 +14,19 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { requestIdMiddleware, requestLoggingMiddleware } from './middleware/requestContext.js';
 import { createHttpError } from './utils/httpError.js';
 import { logger } from './utils/logger.js';
-import { initMonitoring } from './utils/monitoring.js';
+import { initMonitoring, setupMonitoringErrorHandler } from './utils/monitoring.js';
+import { getSupabaseAdmin } from './auth/supabaseClient.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config();
+initMonitoring();
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || '100kb';
 const corsOrigin = process.env.CORS_ORIGIN || process.env.CLIENT_ORIGIN || '';
 const allowedOrigins = corsOrigin.split(',')
   .map((origin) => origin.trim())
@@ -86,7 +89,9 @@ app.use(
       directives: {
         "default-src": ["'self'"],
       },
-      reportOnly: true,
+      reportOnly: process.env.CSP_REPORT_ONLY
+        ? process.env.CSP_REPORT_ONLY === 'true'
+        : process.env.NODE_ENV !== 'production',
     },
   }),
 );
@@ -94,9 +99,41 @@ app.use(
   cors(corsOptions),
 );
 app.options(/.*/, cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: JSON_BODY_LIMIT }));
 
 app.get('/health', (_req, res) => res.status(200).json({ ok: true }));
+app.get('/ready', async (_req, res) => {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase
+      .from('properties')
+      .select('id', { count: 'exact', head: true })
+      .limit(1);
+
+    if (error) {
+      logger.warn('readiness.supabase.failed', {
+        errorCode: error.code || null,
+        errorMessage: error.message || null,
+      });
+      res.status(503).json({ ok: false, dependency: 'supabase' });
+      return;
+    }
+
+    res.status(200).json({ ok: true });
+  } catch (error) {
+    logger.error('readiness.failed', {
+      errorMessage: error?.message || 'Unknown readiness error',
+      stack: error?.stack || null,
+    });
+    res.status(503).json({ ok: false });
+  }
+});
+
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/debug/sentry', (_req, _res) => {
+    throw new Error('Sentry backend test error');
+  });
+}
 
 app.use('/api/auth/login', loginLimiter);
 app.use('/api', apiLimiter);
@@ -110,13 +147,49 @@ app.use('/api/profile', profileRouter);
 app.use(express.static(path.join(__dirname, 'static')));
 
 app.use(notFoundHandler);
+setupMonitoringErrorHandler(app);
 app.use(errorHandler);
 
-initMonitoring();
-
-app.listen(port, () => {
-  logger.info('server.started', {
-    port,
-    nodeEnv: process.env.NODE_ENV || 'development',
+if (process.env.NODE_ENV !== 'test') {
+  const server = app.listen(port, () => {
+    logger.info('server.started', {
+      port,
+      nodeEnv: process.env.NODE_ENV || 'development',
+    });
   });
-});
+
+  const shutdown = (signal) => {
+    logger.info('server.shutdown.started', { signal });
+    server.close((error) => {
+      if (error) {
+        logger.error('server.shutdown.failed', {
+          signal,
+          errorMessage: error.message,
+          stack: error.stack || null,
+        });
+        process.exit(1);
+      }
+
+      logger.info('server.shutdown.completed', { signal });
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('unhandledRejection', (reason) => {
+    logger.error('process.unhandled_rejection', {
+      errorMessage: reason?.message || String(reason),
+      stack: reason?.stack || null,
+    });
+  });
+  process.on('uncaughtException', (error) => {
+    logger.error('process.uncaught_exception', {
+      errorMessage: error?.message || 'Unknown uncaught exception',
+      stack: error?.stack || null,
+    });
+    process.exit(1);
+  });
+}
+
+export default app;

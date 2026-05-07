@@ -2,10 +2,13 @@
 /backups/
 
 # Local environment overrides
+.env
 .env.local
 .env.*.local
+client/.env
 client/.env.local
 client/.env.*.local
+server/.env
 server/.env.local
 server/.env.*.local
 

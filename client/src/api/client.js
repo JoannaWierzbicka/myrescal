@@ -1,4 +1,5 @@
 import { authStorage } from '../context/authStorage.js';
+import { captureClientException } from '../utils/monitoring.js';
 
 export const AUTH_EVENTS = {
   UNAUTHORIZED: 'auth:unauthorized',
@@ -184,6 +185,18 @@ export async function apiClient(path, { method = 'GET', data, headers, signal } 
       error.code = normalizedError.code;
       error.details = normalizedError.details;
       error.requestId = normalizedError.requestId || responseRequestId || requestId;
+      if (response.status >= 500) {
+        captureClientException(error, {
+          requestId: error.requestId,
+          endpoint: path,
+          status: response.status,
+          extra: {
+            method,
+            apiBaseUrl: API_BASE_URL,
+            errorCode: normalizedError.code,
+          },
+        });
+      }
       throw error;
     }
 
@@ -195,6 +208,15 @@ export async function apiClient(path, { method = 'GET', data, headers, signal } 
 
     if (isNetworkError(error) || isTimeoutError(error)) {
       reportTemporaryServerError({ retryCallback });
+      captureClientException(error, {
+        requestId,
+        endpoint: path,
+        extra: {
+          method,
+          apiBaseUrl: API_BASE_URL,
+          reason: isTimeoutError(error) ? 'timeout' : 'network',
+        },
+      });
     }
 
     throw error;

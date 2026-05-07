@@ -5,6 +5,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { createHttpError } from '../utils/httpError.js';
 import { mapSupabaseError } from '../utils/mapSupabaseError.js';
 import { validateRoomPayload } from '../validators/roomValidator.js';
+import { validateIdParam, validateRoomsQuery } from '../validators/requestSchemas.js';
 
 const router = Router();
 const ROOM_UNIQUE_NAME_ERROR = 'Room name must be unique within this property.';
@@ -17,7 +18,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
-    const { property_id: propertyId } = req.query;
+    const { property_id: propertyId } = validateRoomsQuery(req.query);
 
     let query = supabase
       .from('rooms')
@@ -91,7 +92,7 @@ router.put(
   asyncHandler(async (req, res) => {
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
-    const { id } = req.params;
+    const id = validateIdParam(req.params);
     const room = validateRoomPayload(req.body);
 
     // Ensure property belongs to owner
@@ -146,7 +147,7 @@ router.delete(
   asyncHandler(async (req, res) => {
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
-    const { id } = req.params;
+    const id = validateIdParam(req.params);
 
     const { data: existingRoom, error: existingRoomError } = await supabase
       .from('rooms')

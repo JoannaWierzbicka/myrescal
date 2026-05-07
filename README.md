@@ -36,6 +36,17 @@ cd client
 npm run dev
 ```
 
+## Testy
+
+Backend:
+
+```bash
+cd server
+npm test
+```
+
+Aktualny zestaw obejmuje podstawowe kontrakty HTTP, format błędów, `401`, `404`, malformed JSON, walidatory i mapowanie błędów Supabase.
+
 ## Konfiguracja ENV
 
 ### Backend (`server/.env`)
@@ -50,14 +61,24 @@ npm run dev
 | `AUTH_REQUIRE_EMAIL_CONFIRMATION` | Zalecane | domyślnie wymagamy potwierdzonego emaila; ustaw `false` tylko lokalnie, jeśli chcesz pominąć ten wymóg |
 | `AUTH_EMAIL_REDIRECT_URL` | Zalecane | adres powrotu po kliknięciu linku potwierdzającego email |
 | `PORT` | Nie | domyślnie `3000` |
+| `JSON_BODY_LIMIT` | Nie | limit JSON body, domyślnie `100kb` |
+| `CSP_REPORT_ONLY` | Nie | `true` wymusza CSP report-only; produkcyjnie domyślnie enforce |
 | `API_RATE_LIMIT_MAX` | Nie | limit globalny `/api` |
 | `AUTH_LOGIN_RATE_LIMIT_MAX` | Nie | limit `/api/auth/login` |
+| `SENTRY_DSN` | Nie | DSN projektu Sentry dla backendu; brak wartości wyłącza Sentry |
+| `SENTRY_ENVIRONMENT` | Nie | środowisko Sentry, np. `development`, `staging`, `production` |
+| `SENTRY_RELEASE` | Nie | wersja/release aplikacji raportowana do Sentry |
+| `SENTRY_TRACES_SAMPLE_RATE` | Nie | sampling performance tracing od `0` do `1`; domyślnie `0` |
 
 ### Frontend (`client/.env`)
 | Zmienna | Wymagana | Opis |
 | --- | --- | --- |
 | `VITE_API_URL` | Nie | preferowany adres API, np. `/api` lub `https://api.example.com` |
 | `VITE_API_BASE_URL` | Nie (legacy) | fallback w kodzie, utrzymany dla kompatybilności |
+| `VITE_SENTRY_DSN` | Nie | DSN projektu Sentry dla web/mobile; brak wartości wyłącza Sentry |
+| `VITE_SENTRY_ENVIRONMENT` | Nie | środowisko Sentry dla klienta |
+| `VITE_SENTRY_RELEASE` | Nie | wersja/release klienta raportowana do Sentry |
+| `VITE_SENTRY_TRACES_SAMPLE_RATE` | Nie | sampling frontend tracing od `0` do `1`; domyślnie `0` |
 
 ## CSP (audyt repo)
 - `vercel.json` (root): brak nagłówków CSP, tylko `rewrites`.
@@ -125,3 +146,10 @@ Przed produkcyjną rejestracją użytkowników skonfiguruj własny SMTP dla Supa
 
 Runbook:
 - `docs/operational/auth-smtp.md`
+
+## Monitoring
+
+Sentry obsługuje błędy backendu, web i mobile po ustawieniu DSN w ENV.
+
+Runbook:
+- `docs/operational/monitoring-sentry.md`

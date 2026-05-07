@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from './supabaseClient.js';
 import { AppError, createHttpError } from '../utils/httpError.js';
+import { setRequestMonitoringContext } from '../utils/monitoring.js';
 
 const shouldRequireConfirmedEmail = () => process.env.AUTH_REQUIRE_EMAIL_CONFIRMATION !== 'false';
 
@@ -37,6 +38,7 @@ export async function requireAuth(req, res, next) {
     }
 
     req.user = user;
+    setRequestMonitoringContext(req);
     next();
   } catch (error) {
     if (error instanceof AppError) {

@@ -1,4 +1,13 @@
 import { createHttpError } from '../utils/httpError.js';
+import { z } from 'zod';
+import {
+  optionalNonNegativeInteger,
+  optionalNonNegativeNumber,
+  optionalTrimmedString,
+  parseSchema,
+  requiredTrimmedString,
+  uuidSchema,
+} from './schemaUtils.js';
 
 export const RESERVATION_STATUSES = Object.freeze([
   'preliminary',
@@ -9,35 +18,43 @@ export const RESERVATION_STATUSES = Object.freeze([
 
 export const DEFAULT_RESERVATION_STATUS = 'preliminary';
 
-const REQUIRED_FIELDS = new Set(['name', 'lastname', 'start_date', 'end_date', 'property_id', 'room_id']);
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_INPUT_REGEX = /^\+?[\d\s\-()]{6,25}$/;
 const MAX_NOTES_LENGTH = 1000;
+const MAX_NAME_LENGTH = 80;
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-const toNumber = (value, field) => {
-  const parsed = Number(value);
-  if (Number.isNaN(parsed)) {
-    throw createHttpError(400, `Field "${field}" must be a valid number.`);
-  }
-  return parsed;
-};
+const reservationSchema = z
+  .object({
+    name: requiredTrimmedString(MAX_NAME_LENGTH, 'First name'),
+    lastname: requiredTrimmedString(MAX_NAME_LENGTH, 'Last name'),
+    phone: optionalTrimmedString(25, 'Phone number'),
+    mail: optionalTrimmedString(254, 'Email'),
+    start_date: z.string({ error: 'Start date is required.' }).regex(ISO_DATE_REGEX, 'Invalid reservation dates.'),
+    end_date: z.string({ error: 'End date is required.' }).regex(ISO_DATE_REGEX, 'Invalid reservation dates.'),
+    property_id: uuidSchema('property_id'),
+    room_id: uuidSchema('room_id'),
+    price: optionalNonNegativeNumber('price').optional(),
+    nightly_rate: optionalNonNegativeNumber('nightly_rate').optional(),
+    total_price: optionalNonNegativeNumber('total_price').optional(),
+    deposit_amount: optionalNonNegativeNumber('deposit_amount').optional(),
+    adults: optionalNonNegativeInteger('adults').optional(),
+    children: optionalNonNegativeInteger('children').optional(),
+    notes: optionalTrimmedString(MAX_NOTES_LENGTH, 'Notes').optional(),
+    status: z.preprocess(
+      (value) => {
+        if (value === undefined || value === null || String(value).trim() === '') return undefined;
+        return String(value).trim();
+      },
+      z.enum(RESERVATION_STATUSES, { error: 'Invalid status.' }).optional(),
+    ),
+  })
+  .passthrough();
 
 const normalizeString = (value) => {
   if (value === undefined || value === null) return null;
   const trimmed = String(value).trim();
   return trimmed.length === 0 ? null : trimmed;
-};
-
-const normalizeNonNegativeNumber = (value, field) => {
-  if (value === undefined || value === null || value === '') {
-    return null;
-  }
-
-  const parsed = toNumber(value, field);
-  if (parsed < 0) {
-    throw createHttpError(400, `Field "${field}" must be greater than or equal to 0.`);
-  }
-  return parsed;
 };
 
 const normalizeEmail = (value) => {
@@ -83,24 +100,9 @@ export const validateReservationPayload = (payload) => {
     throw createHttpError(400, 'Invalid reservation payload.');
   }
 
-  const missing = [];
-  REQUIRED_FIELDS.forEach((field) => {
-    const value = payload[field];
-    if (value === undefined || value === null) {
-      missing.push(field);
-      return;
-    }
-    if (typeof value === 'string' && value.trim() === '') {
-      missing.push(field);
-    }
-  });
-
-  if (missing.length > 0) {
-    throw createHttpError(400, `Missing required fields: ${missing.join(', ')}.`);
-  }
-
-  const startDate = new Date(payload.start_date);
-  const endDate = new Date(payload.end_date);
+  const parsedPayload = parseSchema(reservationSchema, payload, 'Invalid reservation payload.');
+  const startDate = new Date(parsedPayload.start_date);
+  const endDate = new Date(parsedPayload.end_date);
 
   if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
     throw createHttpError(400, 'Invalid reservation dates.');
@@ -110,32 +112,32 @@ export const validateReservationPayload = (payload) => {
     throw createHttpError(400, 'End date must be after the start date.');
   }
 
-  const legacyPrice = normalizeNonNegativeNumber(payload.price, 'price');
-  const nightlyRate = normalizeNonNegativeNumber(payload.nightly_rate, 'nightly_rate');
-  const totalPrice = normalizeNonNegativeNumber(payload.total_price, 'total_price');
-  const depositAmount = normalizeNonNegativeNumber(payload.deposit_amount, 'deposit_amount');
+  const legacyPrice = parsedPayload.price ?? null;
+  const nightlyRate = parsedPayload.nightly_rate ?? null;
+  const totalPrice = parsedPayload.total_price ?? null;
+  const depositAmount = parsedPayload.deposit_amount ?? null;
 
   const result = {
-    name: String(payload.name).trim(),
-    lastname: String(payload.lastname).trim(),
-    phone: normalizePhone(payload.phone),
-    mail: normalizeEmail(payload.mail),
-    start_date: payload.start_date,
-    end_date: payload.end_date,
-    property_id: String(payload.property_id),
-    room_id: String(payload.room_id),
+    name: parsedPayload.name,
+    lastname: parsedPayload.lastname,
+    phone: normalizePhone(parsedPayload.phone),
+    mail: normalizeEmail(parsedPayload.mail),
+    start_date: parsedPayload.start_date,
+    end_date: parsedPayload.end_date,
+    property_id: parsedPayload.property_id,
+    room_id: parsedPayload.room_id,
     nightly_rate: nightlyRate,
     total_price: totalPrice ?? legacyPrice,
     deposit_amount: depositAmount,
-    adults: normalizeNonNegativeNumber(payload.adults, 'adults'),
-    children: normalizeNonNegativeNumber(payload.children, 'children'),
-    notes: normalizeNotes(payload.notes),
+    adults: parsedPayload.adults ?? null,
+    children: parsedPayload.children ?? null,
+    notes: normalizeNotes(parsedPayload.notes),
   };
 
-  if (payload.status !== undefined && payload.status !== null && String(payload.status).trim() !== '') {
-    const normalizedStatus = String(payload.status).trim();
+  if (parsedPayload.status !== undefined && parsedPayload.status !== null && String(parsedPayload.status).trim() !== '') {
+    const normalizedStatus = String(parsedPayload.status).trim();
     if (!RESERVATION_STATUSES.includes(normalizedStatus)) {
-      throw createHttpError(400, `Invalid status "${payload.status}".`);
+      throw createHttpError(400, `Invalid status "${parsedPayload.status}".`, null, 'VALIDATION_ERROR');
     }
     result.status = normalizedStatus;
   }

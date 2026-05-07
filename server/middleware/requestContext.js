@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { logger } from '../utils/logger.js';
+import { setRequestMonitoringContext } from '../utils/monitoring.js';
 
 const REQUEST_ID_HEADER = 'x-request-id';
 const MAX_REQUEST_ID_LENGTH = 128;
@@ -26,6 +27,8 @@ export const requestIdMiddleware = (req, res, next) => {
 
 export const requestLoggingMiddleware = (req, res, next) => {
   const start = process.hrtime.bigint();
+
+  setRequestMonitoringContext(req);
 
   res.on('finish', () => {
     if (res.statusCode >= 400 && res.locals?.errorLogged) {

@@ -18,6 +18,10 @@ During development the client proxies `"/api"` to the Node server (default `http
 | --- | --- | --- |
 | `VITE_API_URL` | `/api` | Preferred API origin variable for dev/prod deployments. |
 | `VITE_API_BASE_URL` | `/api` | Legacy fallback (kept for backwards compatibility). |
+| `VITE_SENTRY_DSN` | empty | Sentry DSN for web/mobile error monitoring. Empty disables Sentry. |
+| `VITE_SENTRY_ENVIRONMENT` | current Vite mode | Sentry environment, e.g. `development`, `staging`, `production`. |
+| `VITE_SENTRY_RELEASE` | empty | Release/version reported to Sentry. |
+| `VITE_SENTRY_TRACES_SAMPLE_RATE` | `0` | Frontend tracing sample rate from `0` to `1`. |
 
 Create a `.env` file inside `client/` if you need to override the default proxy path:
 

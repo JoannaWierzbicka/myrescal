@@ -1,22 +1,23 @@
 import { createHttpError } from '../utils/httpError.js';
+import { z } from 'zod';
+import { parseSchema, requiredTrimmedString, uuidSchema } from './schemaUtils.js';
+
+const roomSchema = z
+  .object({
+    property_id: uuidSchema('property_id'),
+    name: requiredTrimmedString(120, 'Room name'),
+  })
+  .passthrough();
 
 export const validateRoomPayload = (payload) => {
   if (!payload || typeof payload !== 'object') {
     throw createHttpError(400, 'Invalid room payload.');
   }
 
-  const { name, property_id: propertyId } = payload;
-
-  if (!propertyId) {
-    throw createHttpError(400, 'property_id is required.');
-  }
-
-  if (!name || !name.trim()) {
-    throw createHttpError(400, 'Room name is required.');
-  }
+  const parsedPayload = parseSchema(roomSchema, payload, 'Invalid room payload.');
 
   return {
-    property_id: propertyId,
-    name: name.trim(),
+    property_id: parsedPayload.property_id,
+    name: parsedPayload.name,
   };
 };

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { fetchCurrentUser, logoutUser } from '../api/auth.js';
 import { AUTH_EVENTS } from '../api/client.js';
 import { authStorage } from './authStorage.js';
+import { configureMonitoringUser } from '../utils/monitoring.js';
 
 const initialState = {
   user: null,
@@ -87,6 +88,10 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     authStorage.setProfile(profile);
   }, [profile]);
+
+  useEffect(() => {
+    configureMonitoringUser({ user, profile });
+  }, [user, profile]);
 
   const login = useCallback(({ user: nextUser, session: nextSession, profile: nextProfile = null }) => {
     const normalizedUser = nextUser ?? null;

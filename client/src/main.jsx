@@ -10,31 +10,49 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { ErrorProvider } from './context/ErrorContext.jsx';
 import { LocaleProvider } from './context/LocaleContext.jsx';
 import { configureCapacitorRuntime } from './mobile/capacitorRuntime.js';
+import {
+  captureMonitoringTestMessage,
+  initMonitoring,
+  MonitoringErrorBoundary,
+} from './utils/monitoring.js';
 
+initMonitoring();
 configureCapacitorRuntime();
+
+if (import.meta.env.DEV) {
+  window.__MYRESCAL_TEST_SENTRY__ = captureMonitoringTestMessage;
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <GlobalStyles
-        styles={(theme) => ({
-          body: {
-            overflowX: 'hidden',
-            backgroundColor: theme.palette.background.default,
-          },
-          '#root': {
-            minHeight: '100vh',
-          },
-        })}
-      />
-      <LocaleProvider>
-        <ErrorProvider>
-          <AuthProvider>
-            <RouterProvider router={router} />
-          </AuthProvider>
-        </ErrorProvider>
-      </LocaleProvider>
-    </ThemeProvider>
+    <MonitoringErrorBoundary
+      fallback={
+        <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
+          Nie udało się załadować aplikacji.
+        </div>
+      }
+    >
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <GlobalStyles
+          styles={(theme) => ({
+            body: {
+              overflowX: 'hidden',
+              backgroundColor: theme.palette.background.default,
+            },
+            '#root': {
+              minHeight: '100vh',
+            },
+          })}
+        />
+        <LocaleProvider>
+          <ErrorProvider>
+            <AuthProvider>
+              <RouterProvider router={router} />
+            </AuthProvider>
+          </ErrorProvider>
+        </LocaleProvider>
+      </ThemeProvider>
+    </MonitoringErrorBoundary>
   </React.StrictMode>
 );

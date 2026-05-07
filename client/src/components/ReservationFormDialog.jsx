@@ -118,6 +118,35 @@ const parseDateToUtcDay = (value) => {
   return utc;
 };
 
+const addDaysToDateValue = (value, days) => {
+  const utc = parseDateToUtcDay(value);
+  if (utc === null) return '';
+
+  const date = new Date(utc);
+  date.setUTCDate(date.getUTCDate() + days);
+
+  const year = String(date.getUTCFullYear());
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
+const ensureEndDateAfterStart = (values) => {
+  if (!values.start_date) return values;
+
+  const startUtc = parseDateToUtcDay(values.start_date);
+  const endUtc = parseDateToUtcDay(values.end_date);
+
+  if (startUtc === null) return values;
+  if (endUtc !== null && endUtc > startUtc) return values;
+
+  return {
+    ...values,
+    end_date: addDaysToDateValue(values.start_date, 1),
+  };
+};
+
 const calculateNumberOfNights = (startDate, endDate) => {
   const startUtc = parseDateToUtcDay(startDate);
   const endUtc = parseDateToUtcDay(endDate);
@@ -569,26 +598,42 @@ function ReservationFormDialog({
     const displayValue = formatDateDisplayInput(value);
     const parsedValue = parseDisplayDate(displayValue);
 
-    setDateDisplayValues((prev) => ({
-      ...prev,
-      [name]: displayValue,
-    }));
-    setFormValues((prev) => ({
-      ...prev,
-      [name]: parsedValue,
-    }));
+    setFormValues((prev) => {
+      const nextValues = ensureEndDateAfterStart({
+        ...prev,
+        [name]: parsedValue,
+      });
+
+      setDateDisplayValues((currentDisplayValues) => ({
+        ...currentDisplayValues,
+        [name]: displayValue,
+        ...(name === 'start_date' && nextValues.end_date !== prev.end_date
+          ? { end_date: formatDateForDisplay(nextValues.end_date) }
+          : {}),
+      }));
+
+      return nextValues;
+    });
   };
 
   const handleNativeDateChange = (event) => {
     const { name, value } = event.target;
-    setFormValues((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    setDateDisplayValues((prev) => ({
-      ...prev,
-      [name]: formatDateForDisplay(value),
-    }));
+    setFormValues((prev) => {
+      const nextValues = ensureEndDateAfterStart({
+        ...prev,
+        [name]: value,
+      });
+
+      setDateDisplayValues((currentDisplayValues) => ({
+        ...currentDisplayValues,
+        [name]: formatDateForDisplay(value),
+        ...(name === 'start_date' && nextValues.end_date !== prev.end_date
+          ? { end_date: formatDateForDisplay(nextValues.end_date) }
+          : {}),
+      }));
+
+      return nextValues;
+    });
   };
 
   const openNativeDatePicker = (ref) => {
