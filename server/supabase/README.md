@@ -7,7 +7,8 @@ Uruchamiaj pliki SQL w Supabase SQL Editor (schema `public`) w tej kolejności:
 3. `reservations_rls.sql`
 4. `reservations_notes_pricing.sql`
 5. `reservations_no_overlap.sql` (najpierw sprawdź typy kolumn i wybierz właściwy wariant)
-6. `remove_confirmed_status.sql` (jeśli baza ma jeszcze stare rekordy/statusy `confirmed`)
+6. `verify_reservations_no_overlap.sql` (bezpieczna weryfikacja: typy kolumn, obecność constraintu, istniejące konflikty)
+7. `remove_confirmed_status.sql` (jeśli baza ma jeszcze stare rekordy/statusy `confirmed`)
 
 ---
 
@@ -21,7 +22,8 @@ where table_schema='public' and table_name='reservations' and column_name in ('s
 ```
 
 - Jeśli `start_date` i `end_date` to `date`, użyj wariantu `daterange(...)`.
-- Jeśli to `timestamp` lub `timestamptz`, użyj wariantu `tstzrange(...)`.
+- Jeśli to `timestamp without time zone`, użyj wariantu `tsrange(...)`.
+- Jeśli to `timestamp with time zone` / `timestamptz`, użyj wariantu `tstzrange(...)`.
 
 ---
 
@@ -47,6 +49,12 @@ where table_schema='public' and table_name='reservations' and column_name in ('s
 - `reservations_no_overlap.sql`:
   - dodaje extension `btree_gist`;
   - definiuje exclusion constraint `reservations_no_overlap`, blokujący nakładające się rezerwacje dla tego samego `room_id`.
+
+- `verify_reservations_no_overlap.sql`:
+  - tylko odczytuje dane/metadane;
+  - pokazuje, czy constraint `reservations_no_overlap` istnieje;
+  - pokazuje liczbę istniejących par rezerwacji, które już się nakładają;
+  - zwraca do 20 przykładów konfliktów, jeśli takie istnieją.
 
 - `remove_confirmed_status.sql`:
   - zamienia stare `confirmed` na `preliminary`;

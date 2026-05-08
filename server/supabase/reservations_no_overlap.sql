@@ -14,7 +14,15 @@ create extension if not exists btree_gist;
 --     daterange(start_date, end_date, '[)') with &&
 --   );
 
--- Variant B (for TIMESTAMP/TIMESTAMPTZ start_date/end_date)
+-- Variant B (for TIMESTAMP WITHOUT TIME ZONE start_date/end_date)
+-- alter table public.reservations
+--   add constraint reservations_no_overlap
+--   exclude using gist (
+--     room_id with =,
+--     tsrange(start_date, end_date, '[)') with &&
+--   );
+
+-- Variant C (for TIMESTAMPTZ start_date/end_date)
 -- alter table public.reservations
 --   add constraint reservations_no_overlap
 --   exclude using gist (
