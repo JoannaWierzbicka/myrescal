@@ -1,3 +1,6 @@
+-- Owner profile table used by account registration/profile screens.
+-- Idempotent: safe to run more than once.
+
 create extension if not exists pgcrypto;
 
 create table if not exists public.owner_profiles (
@@ -17,11 +20,3 @@ create table if not exists public.owner_profiles (
 
 create index if not exists owner_profiles_owner_idx on public.owner_profiles(owner_id);
 
-alter table public.owner_profiles enable row level security;
-
-drop policy if exists "Users manage own owner profile" on public.owner_profiles;
-
-create policy "Users manage own owner profile" on public.owner_profiles
-  for all
-  using (auth.uid() = owner_id)
-  with check (auth.uid() = owner_id);

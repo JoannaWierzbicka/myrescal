@@ -1,3 +1,6 @@
+-- Remove legacy reservation status "confirmed".
+-- Idempotent: safe to run more than once.
+
 update public.reservations
 set status = 'preliminary'
 where status = 'confirmed';
@@ -8,3 +11,4 @@ alter table public.reservations
 alter table public.reservations
   add constraint reservations_status_check
   check (status in ('preliminary', 'deposit_paid', 'booking', 'past'));
+

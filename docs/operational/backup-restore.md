@@ -1,124 +1,151 @@
 # Backup & Restore Runbook (MyResCal)
 
-## 1) Zakres i cel
-Ten runbook opisuje minimalny, praktyczny proces backupu i odtwarzania danych dla obecnej architektury (Supabase + Node/Express), bez migracji infrastruktury.
+## 1. Scope And Purpose
 
-Priorytet:
-- szybko odzyskać krytyczne dane biznesowe,
-- zminimalizować ryzyko operacyjne,
-- mieć powtarzalny test restore.
+This runbook describes the minimal practical backup and restore process for the current architecture: Supabase + Node/Express. It does not cover infrastructure migration.
 
-## 2) Co wymaga backupu
+Priorities:
 
-### Krytyczne dane
-- `public.reservations` - główne dane biznesowe rezerwacji.
-- `public.properties` - obiekty/nieruchomości właściciela.
-- `public.rooms` - pokoje powiązane z obiektami i rezerwacjami.
-- `auth.users` - konta użytkowników (mapowanie do `owner_id`).
+- recover critical business data quickly;
+- reduce operational risk;
+- keep restore testing repeatable.
 
-### Konfiguracja i logika DB
-- SQL z `server/supabase/*.sql` (RLS, constraints, indeksy).
-- Zmienne środowiskowe (`server/.env`) - traktować jako sekret, przechowywać poza repo.
+## 2. What Needs Backup
 
-### Poza bazą
-- W kodzie nie ma użycia Supabase Storage bucketów i uploadów użytkownika.
-- Statyczne assety frontendu są wersjonowane w Git (nie wymagają osobnego backupu danych runtime).
+### Critical Data
 
-## 3) Co zapewnia Supabase (provider)
-- Wbudowane backupy fizyczne (zależne od planu projektu).
-- Point-in-time recovery (PITR) jako funkcja planu/dodatku.
-- Restore backupu z poziomu platformy Supabase.
+- `public.reservations` - primary reservation business data.
+- `public.properties` - owner properties.
+- `public.rooms` - rooms linked to properties and reservations.
+- `auth.users` - user accounts mapped to `owner_id`.
 
-Uwaga: backupy bazy nie obejmują wszystkich ustawień projektu (np. API keys, część ustawień Auth) oraz nie obejmują plików obiektów Storage (obejmują tylko metadane obiektów).
+### DB Configuration And Logic
 
-## 4) Minimalna polityka backupu
+- SQL from `server/supabase/migrations/*.sql` covering RLS, constraints, and indexes.
+- Environment variables from `server/.env`; treat them as secrets and store them outside the repo.
 
-### Częstotliwość
-- Codziennie: 1 backup logiczny aplikacji (`scripts/backup.sh`).
-- Dodatkowo przed każdą zmianą podwyższonego ryzyka (większe zmiany SQL, większy deploy backendu).
+### Outside The Database
 
-### Retencja
-- Lokalnie: 7 dni.
-- Kopia offsite (prywatny storage szyfrowany): 30 dni.
+- The codebase currently does not use Supabase Storage buckets or user uploads.
+- Frontend static assets are versioned in Git and do not need a separate runtime data backup.
 
-### Odpowiedzialność
-- Właściciel procesu: osoba dyżurna/developer odpowiedzialny za deploy.
-- Backup codzienny może być odpalany ręcznie lub z prostego crona/CI (bez rozbudowanej orkiestracji).
+## 3. What Supabase Provides
 
-## 5) Jak wykonać backup
+- Built-in physical backups, depending on the project plan.
+- Point-in-time recovery (PITR) as a plan/add-on feature.
+- Backup restore through the Supabase platform.
 
-Wymagania lokalne:
+Note: database backups do not include every project setting, for example API keys or some Auth settings. They also do not include Storage object files, only object metadata.
+
+## 4. Minimal Backup Policy
+
+### Frequency
+
+- Daily: one logical application backup using `scripts/backup.sh`.
+- Additionally before every higher-risk change, for example larger SQL changes or a larger backend deploy.
+
+### Retention
+
+- Local: 7 days.
+- Offsite copy in private encrypted storage: 30 days.
+
+### Ownership
+
+- Process owner: on-call/deploying developer.
+- Daily backups can be triggered manually or from a simple cron/CI job. No complex orchestration is required at this stage.
+
+## 5. How To Run Backup
+
+Local requirements:
+
 - `pg_dump`, `gzip`.
-- `DATABASE_URL` z uprawnieniami do odczytu wymaganych schematów.
+- `DATABASE_URL` with read access to required schemas.
 
-Przykład:
+Example:
+
 ```bash
 export DATABASE_URL='postgresql://...'
 ./scripts/backup.sh
 ```
 
-Efekt:
-- plik dumpu: `backups/backup_YYYYmmdd_HHMMSS.sql.gz`
+Output:
+
+- dump file: `backups/backup_YYYYmmdd_HHMMSS.sql.gz`
 - checksum: `backups/backup_YYYYmmdd_HHMMSS.sql.gz.sha256`
 
-## 6) Plan restore (kolejność)
+## 6. Restore Plan
 
-### Zasada bezpieczeństwa
-Najpierw restore testowy, potem dopiero decyzja o restore produkcyjnym.
+### Safety Rule
 
-### Kroki
-1. Wykonaj świeży backup bieżącego stanu docelowej bazy (nawet jeśli jest uszkodzona logicznie).
-2. Wybierz właściwy plik backupu i sprawdź checksum.
-3. Ustaw `DATABASE_URL` na środowisko testowe/staging (nigdy od razu produkcja).
-4. Uruchom restore:
+Run a test restore first, then decide whether production restore is needed.
+
+### Steps
+
+1. Take a fresh backup of the current target database, even if it is logically broken.
+2. Choose the correct backup file and verify its checksum.
+3. Set `DATABASE_URL` to a test/staging environment, never production first.
+4. Run restore:
+
 ```bash
 export DATABASE_URL='postgresql://...test...'
 ./scripts/restore.sh backups/backup_YYYYmmdd_HHMMSS.sql.gz
 ```
-5. Zweryfikuj integralność i działanie aplikacji (sekcja 7).
-6. Dopiero po poprawnym teście powtórz restore na produkcji (z kontrolowanym oknem serwisowym).
 
-Wymuszenie trybu bez promptu (np. CI):
+5. Verify integrity and application behavior. See section 7.
+6. Only after a successful test, repeat restore on production during a controlled maintenance window.
+
+Non-interactive mode, for example in CI:
+
 ```bash
 FORCE_RESTORE=1 ./scripts/restore.sh --yes backups/backup_YYYYmmdd_HHMMSS.sql.gz
 ```
 
-## 7) Test restore (warunek jakości)
+## 7. Restore Test
 
-Minimalny test (co najmniej raz w miesiącu):
-1. Restore na osobnym środowisku testowym.
-2. Sprawdzenie SQL:
+Minimum test, at least monthly:
+
+1. Restore to a separate test environment.
+2. Run SQL checks:
+
 ```sql
 select count(*) from public.properties;
 select count(*) from public.rooms;
 select count(*) from public.reservations;
 select count(*) from auth.users;
 ```
-3. Smoke test aplikacji:
-- logowanie istniejącym kontem,
-- lista obiektów/pokoi/rezerwacji,
-- dodanie i edycja przykładowej rezerwacji.
-4. Zapis wyniku testu (data, backup file, wynik PASS/FAIL).
 
-Backup bez cyklicznego testu restore nie jest rozwiązaniem domkniętym.
+3. Run an application smoke test:
 
-## 8) Ograniczenia obecnego podejścia
-- Brak pełnej automatyzacji harmonogramu i retencji w repo.
-- Brak automatycznego raportowania statusu backupów.
-- Brak osobnej procedury dla obiektów Storage (obecnie nieużywane w projekcie).
+- log in with an existing account;
+- list properties, rooms, and reservations;
+- create and edit a sample reservation.
 
-## 9) Przygotowanie pod przyszłą migrację na własny Postgres
-To, co pomaga już teraz:
-- regularny dump logiczny,
-- udokumentowany restore workflow,
-- SQL i zasady RLS trzymane w repo.
+4. Record the test result: date, backup file, PASS/FAIL.
 
-Czego będzie brakować przy migracji:
-- planu migracji Auth (Supabase Auth -> własny mechanizm),
-- mapowania funkcji specyficznych dla Supabase,
-- procedury przeniesienia ustawień projektu i sekretów.
+A backup without a recurring restore test is not a complete backup strategy.
 
-Rekomendacja na później (bez wdrażania teraz):
-- utrzymywać regularny test restore,
-- trzymać listę zależności Supabase-specific,
-- doprecyzować docelowy model auth przed migracją infrastruktury.
+## 8. Current Limitations
+
+- No full scheduling and retention automation in the repo.
+- No automatic backup status reporting.
+- No separate procedure for Storage objects because Storage is not used by the project right now.
+
+## 9. Preparation For Future Migration To Own Postgres
+
+What already helps:
+
+- regular logical dumps;
+- documented restore workflow;
+- SQL and RLS rules stored in the repo.
+
+What will still be missing:
+
+- Auth migration plan from Supabase Auth to a custom mechanism;
+- mapping of Supabase-specific features;
+- procedure for moving project settings and secrets.
+
+Later recommendation, without implementing it now:
+
+- keep regular restore tests;
+- maintain a list of Supabase-specific dependencies;
+- define the target auth model before infrastructure migration.

@@ -1,14 +1,22 @@
 # MyResCal
 
-MyResCal to aplikacja fullstack do zarządzania rezerwacjami (client: React + Vite + MUI, server: Node + Express, DB/Auth: Supabase).
+MyResCal is a full-stack reservation management application.
 
-## Wymagania
+Stack:
+
+- client: React + Vite + MUI
+- server: Node + Express
+- database/auth: Supabase
+
+## Requirements
+
 - Node.js 20+
 - npm
-- projekt Supabase
-- dostęp do Supabase SQL Editor
+- Supabase project
+- access to Supabase SQL Editor
 
-## Struktura
+## Structure
+
 ```text
 .
 ├── client/
@@ -17,26 +25,32 @@ MyResCal to aplikacja fullstack do zarządzania rezerwacjami (client: React + Vi
 └── README.md
 ```
 
-## Szybki start
-1. Utwórz `server/.env` na bazie `server/.env.example`.
-2. Zainstaluj zależności:
+## Quick Start
+
+1. Create `server/.env` from `server/.env.example`.
+2. Install dependencies:
+
 ```bash
 cd server && npm install
 cd ../client && npm install
 ```
-3. Wykonaj SQL z `server/supabase/README.md`.
-4. Uruchom backend:
+
+3. Apply the SQL process described in `server/supabase/README.md`.
+4. Start the backend:
+
 ```bash
 cd server
 npm run dev
 ```
-5. Uruchom frontend:
+
+5. Start the frontend:
+
 ```bash
 cd client
 npm run dev
 ```
 
-## Testy
+## Tests
 
 Backend:
 
@@ -45,112 +59,123 @@ cd server
 npm test
 ```
 
-Aktualny zestaw obejmuje podstawowe kontrakty HTTP, format błędów, `401`, `404`, malformed JSON, walidatory i mapowanie błędów Supabase.
+The current test suite covers core HTTP contracts, normalized error responses, `401`, `404`, malformed JSON, validators, Supabase error mapping, and the `properties`, `rooms`, and `reservations` endpoints.
 
-## Konfiguracja ENV
+## Environment Configuration
 
 ### Backend (`server/.env`)
-| Zmienna | Wymagana | Opis |
+
+| Variable | Required | Description |
 | --- | --- | --- |
-| `SUPABASE_URL` | Tak | URL projektu Supabase |
-| `SUPABASE_ANON_KEY` | Tak | klucz anon do requestów usera (RLS enforced) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Tak | klucz admin/service-role (operacje administracyjne, walidacja auth) |
-| `SUPABASE_KEY` | Nie (legacy) | fallback dla `SUPABASE_SERVICE_ROLE_KEY` (deprecated) |
-| `CORS_ORIGIN` | Zalecane | lista originów oddzielona przecinkami |
-| `CLIENT_ORIGIN` | Nie (legacy) | fallback dla `CORS_ORIGIN` (deprecated) |
-| `AUTH_REQUIRE_EMAIL_CONFIRMATION` | Zalecane | domyślnie wymagamy potwierdzonego emaila; ustaw `false` tylko lokalnie, jeśli chcesz pominąć ten wymóg |
-| `AUTH_EMAIL_REDIRECT_URL` | Zalecane | adres powrotu po kliknięciu linku potwierdzającego email |
-| `PORT` | Nie | domyślnie `3000` |
-| `JSON_BODY_LIMIT` | Nie | limit JSON body, domyślnie `100kb` |
-| `CSP_REPORT_ONLY` | Nie | `true` wymusza CSP report-only; produkcyjnie domyślnie enforce |
-| `API_RATE_LIMIT_MAX` | Nie | limit globalny `/api` |
-| `AUTH_LOGIN_RATE_LIMIT_MAX` | Nie | limit `/api/auth/login` |
-| `SENTRY_DSN` | Nie | DSN projektu Sentry dla backendu; brak wartości wyłącza Sentry |
-| `SENTRY_ENVIRONMENT` | Nie | środowisko Sentry, np. `development`, `staging`, `production` |
-| `SENTRY_RELEASE` | Nie | wersja/release aplikacji raportowana do Sentry |
-| `SENTRY_TRACES_SAMPLE_RATE` | Nie | sampling performance tracing od `0` do `1`; domyślnie `0` |
+| `SUPABASE_URL` | Yes | Supabase project URL. |
+| `SUPABASE_ANON_KEY` | Yes | Supabase anon key used for user-scoped requests with RLS enforced. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Admin/service-role key used for administrative operations and auth validation. |
+| `SUPABASE_KEY` | No (legacy) | Fallback for `SUPABASE_SERVICE_ROLE_KEY`; deprecated. |
+| `CORS_ORIGIN` | Recommended | Comma-separated list of allowed origins. |
+| `CLIENT_ORIGIN` | No (legacy) | Fallback for `CORS_ORIGIN`; deprecated. |
+| `AUTH_REQUIRE_EMAIL_CONFIRMATION` | Recommended | Email confirmation is required by default; set to `false` only locally if you need to bypass it. |
+| `AUTH_EMAIL_REDIRECT_URL` | Recommended | Redirect URL after clicking the email confirmation link. |
+| `PORT` | No | Defaults to `3000`. |
+| `JSON_BODY_LIMIT` | No | JSON body limit; defaults to `100kb`. |
+| `CSP_REPORT_ONLY` | No | `true` forces CSP report-only mode; production defaults to enforce mode. |
+| `API_RATE_LIMIT_MAX` | No | Global `/api` rate limit. |
+| `AUTH_LOGIN_RATE_LIMIT_MAX` | No | `/api/auth/login` rate limit. |
+| `SENTRY_DSN` | No | Sentry DSN for backend monitoring; empty disables Sentry. |
+| `SENTRY_ENVIRONMENT` | No | Sentry environment, for example `development`, `staging`, `production`. |
+| `SENTRY_RELEASE` | No | Application release/version reported to Sentry. |
+| `SENTRY_TRACES_SAMPLE_RATE` | No | Performance tracing sample rate from `0` to `1`; defaults to `0`. |
 
 ### Frontend (`client/.env`)
-| Zmienna | Wymagana | Opis |
+
+| Variable | Required | Description |
 | --- | --- | --- |
-| `VITE_API_URL` | Nie | preferowany adres API, np. `/api` lub `https://api.example.com` |
-| `VITE_NATIVE_API_URL` | Nie | absolutny adres API dla aplikacji Android/Capacitor, np. `https://myrescal.onrender.com/api` |
-| `VITE_API_BASE_URL` | Nie (legacy) | fallback w kodzie, utrzymany dla kompatybilności |
-| `VITE_SENTRY_DSN` | Nie | DSN projektu Sentry dla web/mobile; brak wartości wyłącza Sentry |
-| `VITE_SENTRY_ENVIRONMENT` | Nie | środowisko Sentry dla klienta |
-| `VITE_SENTRY_RELEASE` | Nie | wersja/release klienta raportowana do Sentry |
-| `VITE_SENTRY_TRACES_SAMPLE_RATE` | Nie | sampling frontend tracing od `0` do `1`; domyślnie `0` |
+| `VITE_API_URL` | No | Preferred API URL, for example `/api` or `https://api.example.com`. |
+| `VITE_NATIVE_API_URL` | No | Absolute API URL for Android/Capacitor builds, for example `https://myrescal.onrender.com/api`. |
+| `VITE_API_BASE_URL` | No (legacy) | Fallback kept for backwards compatibility. |
+| `VITE_SENTRY_DSN` | No | Sentry DSN for web/mobile monitoring; empty disables Sentry. |
+| `VITE_SENTRY_ENVIRONMENT` | No | Client Sentry environment. |
+| `VITE_SENTRY_RELEASE` | No | Client release/version reported to Sentry. |
+| `VITE_SENTRY_TRACES_SAMPLE_RATE` | No | Frontend tracing sample rate from `0` to `1`; defaults to `0`. |
 
-## CSP (audyt repo)
-- `vercel.json` (root): brak nagłówków CSP, tylko `rewrites`.
-- `client/vercel.json`: brak nagłówków CSP, tylko `rewrites`.
-- `client/index.html`: brak meta tagu CSP.
-- brak w repo; możliwe że ustawione w Vercel Dashboard.
+## CSP Repo Audit
 
-## Sprawdzenie typów dat w DB
-Uruchom w Supabase SQL Editor:
+- Root `vercel.json`: no CSP headers, only `rewrites`.
+- `client/vercel.json`: no CSP headers, only `rewrites`.
+- `client/index.html`: no CSP meta tag.
+- No CSP config is stored in this repo; it may be configured in the Vercel dashboard.
 
-```sql
-select column_name, data_type, udt_name from information_schema.columns 
-where table_schema='public' and table_name='reservations' and column_name in ('start_date','end_date','room_id');
+## Supabase Migrations
+
+The current source of truth for database changes is:
+
+```text
+server/supabase/migrations/
 ```
 
-## RLS: wymagane pliki SQL
-Wykonaj pliki z katalogu `server/supabase`:
-- `properties_rooms.sql`
-- `owner_profiles.sql`
-- `reservations_rls.sql`
-- `reservations_notes_pricing.sql`
-- `reservations_no_overlap.sql` (po wybraniu właściwego wariantu zgodnie z typami kolumn)
+Run files in Supabase SQL Editor in numeric order. Details:
 
-Szczegóły kolejności i uwagi operacyjne: `server/supabase/README.md`.
+- `server/supabase/README.md`
+- `docs/operational/supabase-migrations.md`
 
 ## Backup & Restore Runbook
-Skrypty:
+
+Scripts:
+
 - `scripts/backup.sh`
 - `scripts/restore.sh`
 
-Wymagania:
-- ustawiony `DATABASE_URL` (connection string do Postgresa)
-- dostępne binarki `pg_dump`, `psql`, `gzip`
+Requirements:
+
+- `DATABASE_URL` set to the Postgres connection string
+- `pg_dump`, `psql`, and `gzip` available locally
 
 Backup:
+
 ```bash
 export DATABASE_URL='postgresql://...'
 ./scripts/backup.sh
 ```
-Pliki backupu:
+
+Backup files:
+
 - `backups/backup_YYYYmmdd_HHMMSS.sql.gz`
 - `backups/backup_YYYYmmdd_HHMMSS.sql.gz.sha256`
 
 Restore:
+
 ```bash
 export DATABASE_URL='postgresql://...'
 ./scripts/restore.sh backups/backup_YYYYmmdd_HHMMSS.sql.gz
 ```
-Tryb bez promptu (np. CI):
+
+Non-interactive mode, for example in CI:
+
 ```bash
 FORCE_RESTORE=1 ./scripts/restore.sh --yes backups/backup_YYYYmmdd_HHMMSS.sql.gz
 ```
 
-Ostrzeżenia:
-- restore nadpisuje dane w docelowej bazie;
-- wykonuj restore najpierw na środowisku testowym;
-- przed restore do produkcji wykonaj świeży backup.
+Warnings:
 
-Pełna procedura operacyjna i plan testów restore:
+- Restore overwrites data in the target database.
+- Always test restore on a test/staging environment first.
+- Take a fresh backup before restoring production.
+
+Full operational procedure and restore test plan:
+
 - `docs/operational/backup-restore.md`
 
 ## Auth SMTP
 
-Przed produkcyjną rejestracją użytkowników skonfiguruj własny SMTP dla Supabase Auth. Domyślna wysyłka Supabase jest tylko testowa i ma niski limit.
+Configure custom SMTP for Supabase Auth before production user registration. Supabase's default email sender is intended for testing and has a low rate limit.
 
 Runbook:
+
 - `docs/operational/auth-smtp.md`
 
 ## Monitoring
 
-Sentry obsługuje błędy backendu, web i mobile po ustawieniu DSN w ENV.
+Sentry monitors backend, web, and mobile errors after DSNs are configured in environment variables.
 
 Runbook:
+
 - `docs/operational/monitoring-sentry.md`
