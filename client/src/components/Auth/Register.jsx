@@ -1,33 +1,26 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Alert, Button, TextField, Typography } from '@mui/material';
-import { registerUser, loginUser } from '../../api/auth.js';
-import { useAuth } from '../../context/AuthContext.jsx';
+import { registerUser } from '../../api/auth.js';
 import { useLocale } from '../../context/LocaleContext.jsx';
 import AuthFormLayout from './AuthFormLayout.jsx';
 import { isApiErrorCode } from '../../api/errorUtils.js';
 
 function Register() {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
-  const { login } = useAuth();
   const { t } = useLocale();
-  const registrationSuccessFlash = useMemo(
-    () => ({
-      message: t('auth.registerSuccessAutoLogin'),
-      severity: 'success',
-    }),
-    [t],
-  );
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+    setSuccess('');
     if (password !== confirmPassword) {
       setConfirmPasswordError(t('auth.confirmPasswordMismatch'));
       return;
@@ -36,36 +29,25 @@ function Register() {
     setIsSubmitting(true);
 
     try {
-      const registrationResult = await registerUser({ email, password });
+      const registrationResult = await registerUser({
+        email,
+        password,
+        firstName,
+        lastName,
+      });
       if (registrationResult?.error) {
         throw new Error(registrationResult.error);
       }
 
-      let session = registrationResult?.session;
-      let user = registrationResult?.user;
-
-      if (!session || !user) {
-        const loginResult = await loginUser({ email, password });
-        if (loginResult?.error) {
-          throw new Error(loginResult.error);
-        }
-        session = loginResult?.session;
-        user = loginResult?.user;
-      }
-
-      if (!session || !user) {
-        throw new Error(t('auth.registerErrorGeneric'));
-      }
-
-      login({ user, session });
-      navigate('/dashboard', {
-        replace: true,
-        state: { flash: registrationSuccessFlash },
-      });
+      setSuccess(t('auth.registerSuccessWithSpamNotice'));
+      setPassword('');
+      setConfirmPassword('');
     } catch (err) {
       const message = err.message || t('auth.registerErrorGeneric');
       if (isApiErrorCode(err, 'AUTH_EMAIL_EXISTS')) {
         setError(t('auth.registerErrorExisting'));
+      } else if (isApiErrorCode(err, 'AUTH_EMAIL_NOT_CONFIRMED')) {
+        setError(t('auth.emailNotConfirmed'));
       } else {
         setError(message || t('auth.registerErrorGeneric'));
       }
@@ -79,8 +61,27 @@ function Register() {
       <Typography variant="h5" gutterBottom>{t('auth.registerTitle')}</Typography>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
       <form onSubmit={handleSubmit}>
+        <TextField
+          label={t('auth.firstName')}
+          fullWidth
+          required
+          margin="normal"
+          autoComplete="given-name"
+          value={firstName}
+          onChange={(event) => setFirstName(event.target.value)}
+        />
+        <TextField
+          label={t('auth.lastName')}
+          fullWidth
+          required
+          margin="normal"
+          autoComplete="family-name"
+          value={lastName}
+          onChange={(event) => setLastName(event.target.value)}
+        />
         <TextField
           label={t('auth.email')}
           fullWidth

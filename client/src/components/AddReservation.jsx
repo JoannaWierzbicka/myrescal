@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addDays, format, startOfToday } from 'date-fns';
 import ReservationFormDialog from './ReservationFormDialog.jsx';
@@ -8,6 +8,16 @@ import { DEFAULT_RESERVATION_STATUS } from '../utils/reservationStatus.js';
 import { useReservationFormData } from '../hooks/useReservationFormData.js';
 
 const formatDateInput = (date) => format(date, 'yyyy-MM-dd');
+
+const buildInitialValues = (propertyId = '') => {
+  const today = startOfToday();
+  return {
+    property_id: propertyId,
+    start_date: formatDateInput(today),
+    end_date: formatDateInput(addDays(today, 1)),
+    status: DEFAULT_RESERVATION_STATUS,
+  };
+};
 
 function AddReservation() {
   const navigate = useNavigate();
@@ -30,15 +40,17 @@ function AddReservation() {
     loading,
     errors,
   } = useReservationFormData('', errorMessages);
+  const [initialValues, setInitialValues] = useState(() => buildInitialValues());
 
-  const initialValues = useMemo(() => {
-    const today = startOfToday();
-    return {
-      property_id: selectedPropertyId,
-      start_date: formatDateInput(today),
-      end_date: formatDateInput(addDays(today, 1)),
-      status: DEFAULT_RESERVATION_STATUS,
-    };
+  useEffect(() => {
+    if (!selectedPropertyId) return;
+    setInitialValues((current) => {
+      if (current.property_id) return current;
+      return {
+        ...current,
+        property_id: selectedPropertyId,
+      };
+    });
   }, [selectedPropertyId]);
 
   const handleSubmit = async (formValues) => {

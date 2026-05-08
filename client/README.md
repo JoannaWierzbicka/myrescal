@@ -17,7 +17,12 @@ During development the client proxies `"/api"` to the Node server (default `http
 | Variable | Default | Description |
 | --- | --- | --- |
 | `VITE_API_URL` | `/api` | Preferred API origin variable for dev/prod deployments. |
+| `VITE_NATIVE_API_URL` | empty | Absolute API URL used by Capacitor native builds. Set it to the Render API, e.g. `https://myrescal.onrender.com/api`. |
 | `VITE_API_BASE_URL` | `/api` | Legacy fallback (kept for backwards compatibility). |
+| `VITE_SENTRY_DSN` | empty | Sentry DSN for web/mobile error monitoring. Empty disables Sentry. |
+| `VITE_SENTRY_ENVIRONMENT` | current Vite mode | Sentry environment, e.g. `development`, `staging`, `production`. |
+| `VITE_SENTRY_RELEASE` | empty | Release/version reported to Sentry. |
+| `VITE_SENTRY_TRACES_SAMPLE_RATE` | `0` | Frontend tracing sample rate from `0` to `1`. |
 
 Create a `.env` file inside `client/` if you need to override the default proxy path:
 
@@ -29,6 +34,7 @@ VITE_API_URL=https://your-production-api.example.com
 
 - Dev (with Vite proxy): usually no frontend env is required, default `/api` works with `vite.config.js` proxy.
 - Prod: set `VITE_API_URL` to the public backend URL (for example `https://api.example.com`).
+- Android/Capacitor: set `VITE_NATIVE_API_URL` to the absolute backend URL. Do not use `/api` for native builds, because it points to the local WebView, not to Vercel/Render.
 
 ## Available Scripts
 

@@ -20,7 +20,7 @@ import { useLocale } from '../../context/LocaleContext.jsx';
 
 export default function Summary() {
   const { t } = useLocale();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [properties, setProperties] = useState([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [reservations, setReservations] = useState([]);
@@ -102,10 +102,17 @@ export default function Summary() {
     ];
   }, [reservations, t]);
 
-  const userName = user?.email ? user.email.split('@')[0] : null;
+  const profileFirstName = profile?.first_name || profile?.firstName || null;
+  const userName = profileFirstName || user?.email || null;
 
   return (
-    <Box sx={{ maxWidth: 980, mx: 'auto' }}>
+    <Box
+      sx={{
+        width: '100%',
+        px: { xs: 0, sm: 1, md: 2 },
+        pt: { xs: 0.5, sm: 1.5, md: 2 },
+      }}
+    >
       <Stack spacing={{ xs: 2.5, md: 3 }}>
         <Stack
           direction={{ xs: 'column', md: 'row' }}
@@ -166,7 +173,7 @@ export default function Summary() {
               display: 'grid',
               gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(2, minmax(0, 1fr))' },
               gap: { xs: 1.25, md: 2 },
-              maxWidth: 640,
+              width: '100%',
             }}
           >
             {stats.map((stat) => (

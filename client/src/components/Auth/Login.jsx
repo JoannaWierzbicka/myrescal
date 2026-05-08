@@ -21,12 +21,18 @@ function Login() {
     setError('');
     setIsSubmitting(true);
     try {
-      const { session, user } = await loginUser({ email, password });
-      login({ user, session });
+      const authResult = await loginUser({ email, password });
+      login({
+        user: authResult.user,
+        session: authResult.session,
+        profile: authResult.profile ?? null,
+      });
       navigate('/dashboard');
     } catch (err) {
       if (isApiErrorCode(err, 'AUTH_INVALID_CREDENTIALS')) {
         setError(t('auth.loginError'));
+      } else if (isApiErrorCode(err, 'AUTH_EMAIL_NOT_CONFIRMED')) {
+        setError(t('auth.emailNotConfirmed'));
       } else {
         setError(err.message || t('auth.loginError'));
       }

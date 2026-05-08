@@ -5,6 +5,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { createHttpError } from '../utils/httpError.js';
 import { mapSupabaseError } from '../utils/mapSupabaseError.js';
 import { validatePropertyPayload } from '../validators/propertyValidator.js';
+import { validateIdParam } from '../validators/requestSchemas.js';
 
 const router = Router();
 
@@ -56,7 +57,7 @@ router.put(
   asyncHandler(async (req, res) => {
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
-    const { id } = req.params;
+    const id = validateIdParam(req.params);
     const property = validatePropertyPayload(req.body);
 
     const { data, error } = await supabase
@@ -84,7 +85,7 @@ router.delete(
   asyncHandler(async (req, res) => {
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
-    const { id } = req.params;
+    const id = validateIdParam(req.params);
 
     const { data: existingProperty, error: existingPropertyError } = await supabase
       .from('properties')

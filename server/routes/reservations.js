@@ -8,6 +8,10 @@ import {
   validateReservationPayload,
   DEFAULT_RESERVATION_STATUS,
 } from '../validators/reservationValidator.js';
+import {
+  validateReservationIdParam,
+  validateReservationQuery,
+} from '../validators/requestSchemas.js';
 
 const router = Router();
 const RESERVATION_OVERLAP_MESSAGE = 'Room is already booked for selected dates.';
@@ -18,7 +22,8 @@ router.use(requireAuth);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const { lastname, start_date: startDate, property_id: propertyId } = req.query;
+    const { lastname, start_date: startDate, property_id: propertyId } =
+      validateReservationQuery(req.query);
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
 
@@ -64,7 +69,7 @@ router.get(
 router.get(
   '/:id',
   asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const id = validateReservationIdParam(req.params);
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
 
@@ -176,7 +181,7 @@ router.post(
 router.put(
   '/:id',
   asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const id = validateReservationIdParam(req.params);
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
     const reservation = validateReservationPayload(req.body);
@@ -256,7 +261,7 @@ router.put(
 router.delete(
   '/:id',
   asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const id = validateReservationIdParam(req.params);
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
 

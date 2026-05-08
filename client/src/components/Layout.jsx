@@ -37,9 +37,11 @@ export default function Layout() {
   const { errorMessage, retryCallback, clearError } = useGlobalError();
   const hasGlobalError = Boolean(errorMessage);
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isHomePage = location.pathname === '/';
   const isPublicHome = location.pathname === '/' && !isAuthenticated;
   const isNativeApp = Capacitor.isNativePlatform();
   const isNativePublicHome = isPublicHome && isNativeApp;
+  const isWebHome = isHomePage && !isNativeApp;
 
   useAndroidBackButton();
 
@@ -149,8 +151,8 @@ export default function Layout() {
             flexGrow: 1,
             display: 'flex',
             alignItems: isAuthPage ? 'center' : 'stretch',
-            pt: isNativePublicHome ? { xs: 1, sm: 2, md: 5 } : { xs: 2, sm: 3, md: 5 },
-            pb: isNativePublicHome ? { xs: 2, sm: 3, md: 8 } : { xs: 12, md: 8 },
+            pt: isWebHome ? 0 : isNativePublicHome ? { xs: 1, sm: 2, md: 5 } : { xs: 2, sm: 3, md: 5 },
+            pb: isWebHome ? 0 : isNativePublicHome ? { xs: 2, sm: 3, md: 8 } : { xs: 12, md: 8 },
             px: { xs: 0, sm: 2, md: 0 },
             backgroundColor: isNativePublicHome ? '#FAF7F0' : 'transparent',
             '&::before': {
@@ -169,7 +171,7 @@ export default function Layout() {
             sx={{
               position: 'relative',
               px: { xs: 2, sm: 3, md: 5 },
-              py: isNativePublicHome ? { xs: 0, sm: 1.5, md: 4 } : { xs: 1.5, sm: 2.5, md: 4 },
+              py: isWebHome ? 0 : isNativePublicHome ? { xs: 0, sm: 1.5, md: 4 } : { xs: 1.5, sm: 2.5, md: 4 },
               borderRadius: 0,
               backgroundColor: 'transparent',
               boxShadow: 'none',
@@ -182,7 +184,7 @@ export default function Layout() {
         <Box
           component="footer"
           sx={{
-            display: { xs: 'none', md: 'block' },
+            display: isWebHome ? 'none' : { xs: 'none', md: 'block' },
             mt: { xs: 6, md: 10 },
             py: { xs: 4, md: 5 },
             background: 'transparent',

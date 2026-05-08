@@ -2,18 +2,21 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { fetchCurrentUser, logoutUser } from '../api/auth.js';
 import { AUTH_EVENTS } from '../api/client.js';
 import { authStorage } from './authStorage.js';
+import { configureMonitoringUser } from '../utils/monitoring.js';
 
 const initialState = {
   user: null,
   session: null,
+  profile: null,
 };
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [{ user, session }, setAuthState] = useState(() => ({
+  const [{ user, session, profile }, setAuthState] = useState(() => ({
     user: authStorage.getUser(),
     session: authStorage.getSession(),
+    profile: authStorage.getProfile(),
   }));
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
@@ -57,6 +60,7 @@ export function AuthProvider({ children }) {
         setAuthState({
           user: response.user,
           session: storedSession,
+          profile: response.profile ?? null,
         });
       })
       .catch((error) => {
@@ -81,16 +85,27 @@ export function AuthProvider({ children }) {
     authStorage.setSession(session);
   }, [session]);
 
-  const login = useCallback(({ user: nextUser, session: nextSession }) => {
+  useEffect(() => {
+    authStorage.setProfile(profile);
+  }, [profile]);
+
+  useEffect(() => {
+    configureMonitoringUser({ user, profile });
+  }, [user, profile]);
+
+  const login = useCallback(({ user: nextUser, session: nextSession, profile: nextProfile = null }) => {
     const normalizedUser = nextUser ?? null;
     const normalizedSession = nextSession ?? null;
+    const normalizedProfile = nextProfile ?? null;
 
     authStorage.setUser(normalizedUser);
     authStorage.setSession(normalizedSession);
+    authStorage.setProfile(normalizedProfile);
 
     setAuthState({
       user: normalizedUser,
       session: normalizedSession,
+      profile: normalizedProfile,
     });
     setAuthChecked(true);
   }, []);
@@ -117,13 +132,14 @@ export function AuthProvider({ children }) {
     () => ({
       user,
       session,
+      profile,
       login,
       logout,
       isLoggingOut,
       authChecked,
       isAuthenticated: Boolean(user),
     }),
-    [user, session, isLoggingOut, login, logout, authChecked],
+    [user, session, profile, isLoggingOut, login, logout, authChecked],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

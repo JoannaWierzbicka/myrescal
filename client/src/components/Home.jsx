@@ -29,15 +29,15 @@ export default function Home() {
         position: 'relative',
         backgroundColor: isNativeApp ? '#FAF7F0' : 'transparent',
         minHeight: {
-          xs: isNativeApp ? 'calc(100dvh - 210px)' : 'clamp(500px, 76dvh, 620px)',
-          sm: isNativeApp ? 'calc(100dvh - 220px)' : 'clamp(520px, 72dvh, 660px)',
-          md: '72vh',
+          xs: isNativeApp ? 'calc(100dvh - 210px)' : 'calc(100dvh - 64px)',
+          sm: isNativeApp ? 'calc(100dvh - 220px)' : 'calc(100dvh - 64px)',
+          md: 'calc(100dvh - 72px)',
         },
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
-        py: { xs: 0, md: 4 },
+        py: isNativeApp ? { xs: 0, md: 4 } : 0,
       }}
     >
       <Box
@@ -45,7 +45,7 @@ export default function Home() {
         aria-hidden="true"
         sx={{
           position: 'absolute',
-          top: 0,
+          top: isNativeApp ? 0 : { xs: 16, sm: 18, md: 22 },
           left: 0,
           right: 0,
           zIndex: 0,
@@ -69,7 +69,14 @@ export default function Home() {
       <Stack
         className="content"
         alignItems="center"
-        sx={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 480, mx: 'auto' }}
+        sx={{
+          position: 'relative',
+          zIndex: 1,
+          width: '100%',
+          maxWidth: 480,
+          mx: 'auto',
+          transform: isNativeApp ? 'none' : { xs: 'translateY(18px)', sm: 'translateY(22px)', md: 'translateY(26px)' },
+        }}
       >
         <Stack
           spacing={{ xs: 1.45, sm: 2, md: 2.4 }}

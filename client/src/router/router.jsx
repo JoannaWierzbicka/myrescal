@@ -16,8 +16,11 @@ import Summary from '../components/Dashboard/Summary.jsx';
 
 import ProtectedRoute from './ProtectedRoute.jsx';
 import { loadReservation } from '../api/reservations.js';
+import { createMonitoredBrowserRouter } from '../utils/monitoring.js';
 
-export const router = createBrowserRouter([
+const createRouter = createMonitoredBrowserRouter(createBrowserRouter);
+
+export const router = createRouter([
   {
     path: '/',
     element: <Layout />,

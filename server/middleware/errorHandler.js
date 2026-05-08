@@ -18,6 +18,10 @@ const toAppError = (err) => {
     return createHttpError(400, 'Malformed JSON payload.', null, 'INVALID_JSON');
   }
 
+  if (err?.type === 'entity.too.large') {
+    return createHttpError(413, 'JSON payload is too large.', null, 'PAYLOAD_TOO_LARGE');
+  }
+
   const statusCode = Number(err?.statusCode || err?.status) || 500;
   const code = typeof err?.code === 'string' ? err.code : defaultErrorCodeForStatus(statusCode);
   const message =
@@ -60,7 +64,12 @@ export const errorHandler = (err, req, res, _next) => {
       ...logContext,
       stack: err?.stack || null,
     });
-    captureException(err, { requestId: req.requestId || null });
+    captureException(err, {
+      requestId: req.requestId || null,
+      userId: req.user?.id || null,
+      userEmail: req.user?.email || null,
+      extra: logContext,
+    });
   } else {
     logger.warn('http.request.failed', logContext);
   }
