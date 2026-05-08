@@ -12,11 +12,16 @@ import {
 export const RESERVATION_STATUSES = Object.freeze([
   'preliminary',
   'deposit_paid',
-  'booking',
+  'confirmed',
   'past',
 ]);
 
 export const DEFAULT_RESERVATION_STATUS = 'preliminary';
+export const RESERVATION_CONFIRMATION_METHODS = Object.freeze([
+  'paid_full',
+  'booking_com',
+  'other',
+]);
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_INPUT_REGEX = /^\+?[\d\s\-()]{6,25}$/;
@@ -44,9 +49,17 @@ const reservationSchema = z
     status: z.preprocess(
       (value) => {
         if (value === undefined || value === null || String(value).trim() === '') return undefined;
-        return String(value).trim();
+        const normalized = String(value).trim();
+        return normalized === 'booking' ? 'confirmed' : normalized;
       },
       z.enum(RESERVATION_STATUSES, { error: 'Invalid status.' }).optional(),
+    ),
+    confirmation_method: z.preprocess(
+      (value) => {
+        if (value === undefined || value === null || String(value).trim() === '') return undefined;
+        return String(value).trim();
+      },
+      z.enum(RESERVATION_CONFIRMATION_METHODS, { error: 'Invalid confirmation method.' }).optional(),
     ),
   })
   .passthrough();
@@ -116,6 +129,19 @@ export const validateReservationPayload = (payload) => {
   const nightlyRate = parsedPayload.nightly_rate ?? null;
   const totalPrice = parsedPayload.total_price ?? null;
   const depositAmount = parsedPayload.deposit_amount ?? null;
+  const rawStatus = String(payload.status || '').trim();
+  const status = parsedPayload.status ?? null;
+  const confirmationMethod =
+    parsedPayload.confirmation_method ?? (rawStatus === 'booking' ? 'booking_com' : null);
+
+  if (status === 'confirmed' && !confirmationMethod) {
+    throw createHttpError(
+      400,
+      'Field "confirmation_method" is required for confirmed reservations.',
+      { field: 'confirmation_method' },
+      'VALIDATION_ERROR',
+    );
+  }
 
   const result = {
     name: parsedPayload.name,
@@ -132,6 +158,7 @@ export const validateReservationPayload = (payload) => {
     adults: parsedPayload.adults ?? null,
     children: parsedPayload.children ?? null,
     notes: normalizeNotes(parsedPayload.notes),
+    confirmation_method: status === 'confirmed' ? confirmationMethod : null,
   };
 
   if (parsedPayload.status !== undefined && parsedPayload.status !== null && String(parsedPayload.status).trim() !== '') {

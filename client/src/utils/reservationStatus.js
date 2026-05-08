@@ -3,18 +3,18 @@ export const DEFAULT_RESERVATION_STATUS = 'preliminary';
 export const RESERVATION_STATUS_META = {
   preliminary: {
     labelKey: 'reservationStatus.preliminary',
-    background: '#F4E2C9',
-    color: '#8A5B2B',
+    background: '#F6A23A',
+    color: '#3F2505',
   },
   deposit_paid: {
     labelKey: 'reservationStatus.depositPaid',
-    background: '#BFE6D5',
-    color: '#0F4C4F',
+    background: '#BFD9FF',
+    color: '#123E7A',
   },
-  booking: {
-    labelKey: 'reservationStatus.booking',
-    background: '#DDEEEB',
-    color: '#0F4C4F',
+  confirmed: {
+    labelKey: 'reservationStatus.confirmed',
+    background: '#BFE6D5',
+    color: '#0E4B2F',
   },
   past: {
     labelKey: 'reservationStatus.past',
@@ -31,4 +31,31 @@ export const RESERVATION_STATUS_OPTIONS = Object.entries(RESERVATION_STATUS_META
   }));
 
 export const getReservationStatusMeta = (status) =>
-  RESERVATION_STATUS_META[status] ?? RESERVATION_STATUS_META.preliminary;
+  RESERVATION_STATUS_META[status === 'booking' ? 'confirmed' : status] ??
+  RESERVATION_STATUS_META.preliminary;
+
+export const DEFAULT_CONFIRMATION_METHOD = 'paid_full';
+
+export const RESERVATION_CONFIRMATION_METHOD_META = {
+  paid_full: {
+    labelKey: 'reservationConfirmationMethod.paidFull',
+  },
+  booking_com: {
+    labelKey: 'reservationConfirmationMethod.bookingCom',
+  },
+  other: {
+    labelKey: 'reservationConfirmationMethod.other',
+  },
+};
+
+export const RESERVATION_CONFIRMATION_METHOD_OPTIONS = Object.entries(
+  RESERVATION_CONFIRMATION_METHOD_META,
+).map(([value, meta]) => ({
+  value,
+  ...meta,
+}));
+
+export const normalizeConfirmationMethod = (method) =>
+  Object.prototype.hasOwnProperty.call(RESERVATION_CONFIRMATION_METHOD_META, method)
+    ? method
+    : DEFAULT_CONFIRMATION_METHOD;

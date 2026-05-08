@@ -28,13 +28,14 @@ Run files in this order:
 4. `003_rls_policies.sql`
 5. `004_status_cleanup.sql`
 6. `005_reservations_no_overlap_auto.sql`
-7. `006_verify_post_deploy.sql`
+7. `007_confirmed_reservations.sql`
+8. `008_verify_post_deploy.sql`
 
 ## What To Check
 
 After `000_preflight_read_only.sql`, save the result. It is the pre-change snapshot.
 
-After `006_verify_post_deploy.sql`, verify:
+After `008_verify_post_deploy.sql`, verify:
 
 - `rls_enabled = true` for:
   - `properties`,
@@ -43,6 +44,8 @@ After `006_verify_post_deploy.sql`, verify:
   - `owner_profiles`.
 - `reservations_no_overlap_exists = true`.
 - `overlapping_reservation_pairs = 0`.
+- `legacy_booking_status_count = 0`.
+- `reservations_confirmation_method_check_exists = true`.
 - RLS policies exist for all four tables.
 
 ## If The Overlap Migration Stops
@@ -51,11 +54,11 @@ After `006_verify_post_deploy.sql`, verify:
 
 If that happens:
 
-1. Run `006_verify_post_deploy.sql`.
+1. Run `008_verify_post_deploy.sql`.
 2. The last result shows up to 20 conflict pairs.
 3. Fix the conflicts manually in the app or in Supabase.
 4. Run `005_reservations_no_overlap_auto.sql` again.
-5. Run `006_verify_post_deploy.sql` again.
+5. Run `008_verify_post_deploy.sql` again.
 
 ## Future Rules
 
@@ -63,4 +66,3 @@ If that happens:
 - Every new DB change gets a new file with the next number.
 - Migrations should be idempotent where practical.
 - Every RLS, constraint, or index change must have a short verification query.
-

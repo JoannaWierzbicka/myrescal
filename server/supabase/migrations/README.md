@@ -10,11 +10,12 @@ Run files in Supabase SQL Editor in numeric order:
 4. `003_rls_policies.sql`
 5. `004_status_cleanup.sql`
 6. `005_reservations_no_overlap_auto.sql`
-7. `006_verify_post_deploy.sql`
+7. `007_confirmed_reservations.sql`
+8. `008_verify_post_deploy.sql`
 
 Rules:
 
 - Run `000_preflight_read_only.sql` first and save the result before changing DB schema.
-- Run `006_verify_post_deploy.sql` after migrations and save the result.
+- Run `008_verify_post_deploy.sql` after migrations and save the result.
 - Do not edit already-run migration files for production. Add a new numbered file instead.
 - Keep new DB changes in this directory as numbered migration files.

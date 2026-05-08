@@ -63,7 +63,7 @@ begin
     and r2.end_date is not null;
 
   if overlap_count > 0 then
-    raise exception 'Cannot add reservations_no_overlap: found % overlapping reservation pairs. Run 006_verify_post_deploy.sql to list conflicts.',
+    raise exception 'Cannot add reservations_no_overlap: found % overlapping reservation pairs. Run 008_verify_post_deploy.sql to list conflicts.',
       overlap_count;
   end if;
 

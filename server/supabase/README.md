@@ -14,7 +14,8 @@ Run migrations in Supabase SQL Editor in numeric order:
 4. `migrations/003_rls_policies.sql`
 5. `migrations/004_status_cleanup.sql`
 6. `migrations/005_reservations_no_overlap_auto.sql`
-7. `migrations/006_verify_post_deploy.sql`
+7. `migrations/007_confirmed_reservations.sql`
+8. `migrations/008_verify_post_deploy.sql`
 
 Detailed runbook:
 
@@ -33,9 +34,9 @@ docs/operational/supabase-migrations.md
 
 - `001_core_schema.sql`
   - creates or updates `properties`, `rooms`, and `reservations`;
-  - adds missing reservation columns: `property_id`, `room_id`, `status`, `notes`, `nightly_rate`, `total_price`, `deposit_amount`;
+  - adds missing reservation columns: `property_id`, `room_id`, `status`, `notes`, `nightly_rate`, `total_price`, `deposit_amount`, `confirmation_method`;
   - copies legacy `price` into `total_price` if that column exists;
-  - adds pricing/status constraints, foreign keys, and indexes.
+  - adds pricing/status/confirmation constraints, foreign keys, and indexes.
 
 - `002_owner_profiles.sql`
   - creates the `owner_profiles` table;
@@ -47,7 +48,7 @@ docs/operational/supabase-migrations.md
   - recreates owner-based policies.
 
 - `004_status_cleanup.sql`
-  - changes legacy `confirmed` status values to `preliminary`;
+  - normalizes legacy reservation status values;
   - recreates the reservation status constraint.
 
 - `005_reservations_no_overlap_auto.sql`
@@ -56,7 +57,12 @@ docs/operational/supabase-migrations.md
   - automatically chooses `daterange`, `tsrange`, or `tstzrange`;
   - adds the `reservations_no_overlap` constraint.
 
-- `006_verify_post_deploy.sql`
+- `007_confirmed_reservations.sql`
+  - changes legacy `booking` reservation status values to `confirmed`;
+  - adds `confirmation_method`;
+  - requires `confirmation_method` for confirmed reservations.
+
+- `008_verify_post_deploy.sql`
   - does not change anything;
   - verifies RLS, constraints, and reservation conflicts after migration.
 

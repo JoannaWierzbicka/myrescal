@@ -2,7 +2,8 @@
 -- Expected results:
 -- - all listed RLS tables have rowsecurity = true,
 -- - reservations_no_overlap_exists = true,
--- - overlapping_reservation_pairs = 0.
+-- - overlapping_reservation_pairs = 0,
+-- - legacy_booking_status_count = 0.
 
 select
   c.relname as table_name,
@@ -48,6 +49,7 @@ where n.nspname = 'public'
   and c.conname in (
     'reservations_no_overlap',
     'reservations_status_check',
+    'reservations_confirmation_method_check',
     'reservations_nightly_rate_non_negative',
     'reservations_total_price_non_negative',
     'reservations_deposit_amount_non_negative',
@@ -140,6 +142,22 @@ policy_status as (
   from pg_policies
   where schemaname = 'public'
     and tablename in ('properties', 'rooms', 'reservations', 'owner_profiles')
+),
+legacy_booking_status as (
+  select count(*) as count
+  from public.reservations
+  where status = 'booking'
+),
+confirmation_method_constraint as (
+  select exists (
+    select 1
+    from pg_constraint c
+    join pg_class t on t.oid = c.conrelid
+    join pg_namespace n on n.oid = t.relnamespace
+    where n.nspname = 'public'
+      and t.relname = 'reservations'
+      and c.conname = 'reservations_confirmation_method_check'
+  ) as exists
 )
 select
   'rls_enabled' as check_name,
@@ -184,4 +202,20 @@ select
     'reservations', reservations_policies,
     'owner_profiles', owner_profiles_policies
   ) as details
-from policy_status;
+from policy_status
+
+union all
+
+select
+  'legacy_booking_status_count' as check_name,
+  case when count = 0 then 'pass' else 'fail' end as result,
+  jsonb_build_object('count', count) as details
+from legacy_booking_status
+
+union all
+
+select
+  'reservations_confirmation_method_check_exists' as check_name,
+  case when exists then 'pass' else 'fail' end as result,
+  jsonb_build_object('exists', exists) as details
+from confirmation_method_constraint;

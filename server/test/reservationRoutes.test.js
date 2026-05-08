@@ -34,7 +34,8 @@ const validReservationPayload = () => ({
   nightly_rate: 250,
   total_price: null,
   deposit_amount: null,
-  status: 'booking',
+  status: 'confirmed',
+  confirmation_method: 'paid_full',
   notes: '',
 });
 

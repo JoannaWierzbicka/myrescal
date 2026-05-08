@@ -40,6 +40,14 @@ function ReservationDetail() {
   const [error, setError] = useState(null);
   const { t, language, dateLocale } = useLocale();
   const statusMeta = getReservationStatusMeta(reservation.status);
+  const normalizedStatus = reservation.status === 'booking' ? 'confirmed' : reservation.status;
+  const normalizedConfirmationMethod =
+    reservation.confirmation_method ?? (reservation.status === 'booking' ? 'booking_com' : null);
+  const confirmationMethodLabelKey = {
+    paid_full: 'reservationConfirmationMethod.paidFull',
+    booking_com: 'reservationConfirmationMethod.bookingCom',
+    other: 'reservationConfirmationMethod.other',
+  }[normalizedConfirmationMethod];
   const guestName = [reservation.name, reservation.lastname].filter(Boolean).join(' ') || '—';
   const propertyName = reservation.property?.name || '—';
   const roomName = reservation.room?.name || '—';
@@ -291,6 +299,12 @@ function ReservationDetail() {
               <DetailItem label={t('reservationDetail.totalPrice')} value={formatMoney(totalPrice)} />
               <DetailItem label={t('reservationForm.fields.depositAmount')} value={formatMoney(reservation.deposit_amount)} />
               <DetailItem label={t('reservationForm.fields.status')} value={t(statusMeta.labelKey)} />
+              {normalizedStatus === 'confirmed' ? (
+                <DetailItem
+                  label={t('reservationForm.fields.confirmationMethod')}
+                  value={confirmationMethodLabelKey ? t(confirmationMethodLabelKey) : '—'}
+                />
+              ) : null}
             </InfoGrid>
           </SectionCard>
 

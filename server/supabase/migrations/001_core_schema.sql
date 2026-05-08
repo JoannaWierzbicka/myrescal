@@ -37,6 +37,7 @@ create table if not exists public.reservations (
   nightly_rate numeric,
   total_price numeric,
   deposit_amount numeric,
+  confirmation_method text,
   created_at timestamp with time zone default now()
 );
 
@@ -60,11 +61,30 @@ alter table public.reservations
   add column if not exists notes text,
   add column if not exists nightly_rate numeric,
   add column if not exists total_price numeric,
-  add column if not exists deposit_amount numeric;
+  add column if not exists deposit_amount numeric,
+  add column if not exists confirmation_method text;
 
 update public.reservations
-set status = coalesce(nullif(btrim(status), ''), 'preliminary')
-where status is null or btrim(status) = '';
+set status = case
+  when status is null or btrim(status) = '' then 'preliminary'
+  when lower(btrim(status)) in ('booking', 'confirmed') then 'confirmed'
+  else btrim(status)
+end
+where status is null
+  or btrim(status) = ''
+  or status <> btrim(status)
+  or lower(btrim(status)) in ('booking', 'confirmed');
+
+update public.reservations
+set confirmation_method = case
+  when status = 'confirmed'
+    and confirmation_method in ('paid_full', 'booking_com', 'other')
+    then confirmation_method
+  when status = 'confirmed' then 'booking_com'
+  else null
+end
+where status = 'confirmed'
+  or confirmation_method is not null;
 
 do $$
 begin
@@ -114,7 +134,25 @@ do $$
 begin
   alter table public.reservations
     add constraint reservations_status_check
-    check (status in ('preliminary', 'deposit_paid', 'booking', 'past'));
+    check (status in ('preliminary', 'deposit_paid', 'confirmed', 'past'));
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.reservations
+    add constraint reservations_confirmation_method_check
+    check (
+      (
+        status = 'confirmed'
+        and confirmation_method in ('paid_full', 'booking_com', 'other')
+      )
+      or (
+        status <> 'confirmed'
+        and confirmation_method is null
+      )
+    );
 exception
   when duplicate_object then null;
 end $$;
@@ -156,4 +194,3 @@ create index if not exists reservations_property_idx on public.reservations(prop
 create index if not exists reservations_room_idx on public.reservations(room_id);
 create index if not exists reservations_room_dates_idx
   on public.reservations(room_id, start_date, end_date);
-
