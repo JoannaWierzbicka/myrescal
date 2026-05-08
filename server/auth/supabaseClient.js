@@ -35,8 +35,29 @@ const baseClientOptions = {
 };
 
 let adminClient;
+let testSupabaseClients = null;
+
+export function setSupabaseClientsForTest(clients) {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('setSupabaseClientsForTest can only be used in test environment');
+  }
+
+  testSupabaseClients = clients || null;
+}
+
+export function resetSupabaseClientsForTest() {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('resetSupabaseClientsForTest can only be used in test environment');
+  }
+
+  testSupabaseClients = null;
+}
 
 export function getSupabaseAdmin() {
+  if (testSupabaseClients?.admin) {
+    return testSupabaseClients.admin;
+  }
+
   if (!adminClient) {
     adminClient = createClient(supabaseUrl, supabaseServiceRoleKey, baseClientOptions);
   }
@@ -45,6 +66,12 @@ export function getSupabaseAdmin() {
 }
 
 export function getSupabaseUser(accessToken) {
+  if (testSupabaseClients?.user) {
+    return typeof testSupabaseClients.user === 'function'
+      ? testSupabaseClients.user(accessToken)
+      : testSupabaseClients.user;
+  }
+
   const options = { ...baseClientOptions };
 
   if (accessToken) {

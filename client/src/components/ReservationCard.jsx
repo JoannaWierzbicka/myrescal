@@ -23,13 +23,7 @@ function ReservationCard({ reservation, onEdit, onDelete, onView, disabled = fal
     ? 'deposit_paid'
     : (typeof reservation.status === 'string' && reservation.status.trim()) || 'preliminary';
   const statusMeta = getReservationStatusMeta(effectiveStatus);
-  const statusLabel = (() => {
-    if (effectiveStatus === 'deposit_paid') return t('reservationStatus.depositPaid');
-    if (effectiveStatus === 'booking') return t('reservationStatus.booking');
-    if (effectiveStatus === 'past') return t('reservationStatus.past');
-    if (effectiveStatus === 'preliminary') return t('reservationStatus.preliminary');
-    return t('reservationStatus.preliminary');
-  })();
+  const statusLabel = t(statusMeta.labelKey);
 
   const formatDate = useCallback(
     (value) => {

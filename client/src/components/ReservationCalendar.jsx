@@ -733,6 +733,7 @@ const DayCell = ({ day, room, reservationsForRoom, onDayClick, onReservationSele
   const displayName = initials || fullName || reservation?.name || '';
   const statusMeta = reservation ? getReservationStatusMeta(reservation.status) : null;
   const blockColor = statusMeta?.background || '#235369';
+  const blockTextColor = statusMeta?.color || '#FFFFFF';
 
   return (
     <Box
@@ -748,7 +749,7 @@ const DayCell = ({ day, room, reservationsForRoom, onDayClick, onReservationSele
         justifyContent: 'flex-start',
         px: 0.6,
         cursor: hasReservation ? 'pointer' : isPast ? 'not-allowed' : onDayClick ? 'pointer' : 'default',
-        color: hasReservation ? '#fff' : 'inherit',
+        color: hasReservation ? blockTextColor : 'inherit',
         borderTopLeftRadius: isStart ? 6 : 0,
         borderBottomLeftRadius: isStart ? 6 : 0,
         borderTopRightRadius:
@@ -788,8 +789,7 @@ const DayCell = ({ day, room, reservationsForRoom, onDayClick, onReservationSele
             noWrap
             sx={{
               fontWeight: 600,
-              color: 'common.white',
-              textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+              color: 'inherit',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               maxWidth: '100%',

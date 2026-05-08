@@ -1,30 +1,31 @@
 # Sentry Monitoring Runbook (MyResCal)
 
-## Zakres
+## Scope
 
-Sentry jest używane do:
-- błędów backendu Express,
-- błędów frontendu web,
-- błędów w aplikacji Android/Capacitor,
-- korelacji błędów z `requestId`,
-- identyfikacji użytkownika po `user.id`.
+Sentry is used for:
 
-Sentry działa tylko wtedy, gdy ustawiony jest DSN. Brak DSN oznacza cichy no-op.
+- Express backend errors;
+- web frontend errors;
+- Android/Capacitor app errors;
+- correlating errors with `requestId`;
+- identifying the user by `user.id`.
 
-## Projekty Sentry
+Sentry runs only when a DSN is configured. No DSN means a silent no-op.
 
-Rekomendowane dwa projekty:
+## Sentry Projects
+
+Recommended setup: two projects.
 
 ```text
 myrescal-backend
 myrescal-frontend
 ```
 
-Frontend obejmuje web i Capacitor Android, bo obecnie używają tego samego React/Vite bundle.
+The frontend project covers both web and Capacitor Android because both currently use the same React/Vite bundle.
 
 ## Backend ENV
 
-Lokalnie / Render:
+Local / Render:
 
 ```env
 SENTRY_DSN=
@@ -33,15 +34,16 @@ SENTRY_RELEASE=
 SENTRY_TRACES_SAMPLE_RATE=0
 ```
 
-Uwagi:
-- `SENTRY_DSN` ustaw z projektu `myrescal-backend`.
-- `SENTRY_RELEASE` powinien docelowo być wersją deployu.
-- `SENTRY_TRACES_SAMPLE_RATE=0` zbiera błędy, ale nie wysyła performance traces.
-- Na staging/test można tymczasowo ustawić `SENTRY_TRACES_SAMPLE_RATE=0.1`.
+Notes:
+
+- Set `SENTRY_DSN` from the `myrescal-backend` project.
+- `SENTRY_RELEASE` should eventually be the deployed version.
+- `SENTRY_TRACES_SAMPLE_RATE=0` collects errors but does not send performance traces.
+- For staging/test, temporarily setting `SENTRY_TRACES_SAMPLE_RATE=0.1` is acceptable.
 
 ## Frontend ENV
 
-Vercel / build Android:
+Vercel / Android build:
 
 ```env
 VITE_SENTRY_DSN=
@@ -50,81 +52,84 @@ VITE_SENTRY_RELEASE=
 VITE_SENTRY_TRACES_SAMPLE_RATE=0
 ```
 
-Uwagi:
-- `VITE_SENTRY_DSN` ustaw z projektu `myrescal-frontend`.
-- Zmienne `VITE_*` są wbudowywane podczas builda, więc po zmianie trzeba przebudować frontend/Android.
+Notes:
 
-## Kontekst wysyłany do Sentry
+- Set `VITE_SENTRY_DSN` from the `myrescal-frontend` project.
+- `VITE_*` variables are embedded at build time, so changing them requires rebuilding the frontend/Android app.
+
+## Context Sent To Sentry
 
 Backend:
-- `request_id`,
-- metoda HTTP,
-- endpoint,
-- status,
-- `user.id` i email, jeśli request jest uwierzytelniony.
+
+- `request_id`;
+- HTTP method;
+- endpoint;
+- status;
+- `user.id` and email when the request is authenticated.
 
 Frontend:
-- `request_id` z API,
-- endpoint,
-- status,
-- `user.id` i email,
-- informacja, czy profil właściciela istnieje.
 
-## Alerty Sentry
+- API `request_id`;
+- endpoint;
+- status;
+- `user.id` and email;
+- whether the owner profile exists.
 
-Minimalne alerty przed testami zewnętrznymi:
+## Sentry Alerts
+
+Minimum alerts before external testing:
 
 1. Backend 5xx spike:
-   - project: `myrescal-backend`,
-   - condition: number of errors/issues above baseline albo minimum kilka błędów w 5-10 minut,
-   - filtr: `level:error`.
+   - project: `myrescal-backend`;
+   - condition: number of errors/issues above baseline, or at least several errors within 5-10 minutes;
+   - filter: `level:error`.
 
 2. Auth/login errors:
-   - project: `myrescal-backend`,
-   - filtr po endpointach `/api/auth/login`, `/api/auth/register`,
-   - powiadomienie, gdy rośnie liczba błędów.
+   - project: `myrescal-backend`;
+   - filter by `/api/auth/login` and `/api/auth/register`;
+   - notify when error volume increases.
 
 3. Supabase errors:
-   - project: `myrescal-backend`,
-   - filtr po kodach zaczynających się od `SUPABASE_`.
+   - project: `myrescal-backend`;
+   - filter by codes starting with `SUPABASE_`.
 
 4. Frontend API/network errors:
-   - project: `myrescal-frontend`,
-   - tagi: `endpoint`, `status`,
-   - powiadomienie przy rosnącej liczbie błędów sieciowych albo `5xx`.
+   - project: `myrescal-frontend`;
+   - tags: `endpoint`, `status`;
+   - notify on increasing network error or `5xx` volume.
 
 5. Render cold start / timeout:
-   - project: `myrescal-frontend`,
-   - obserwować błędy z `reason=timeout` albo `reason=network`.
+   - project: `myrescal-frontend`;
+   - watch errors with `reason=timeout` or `reason=network`.
 
-## Test integracji
+## Integration Test
 
-1. Ustaw DSN lokalnie dla backendu i frontendu.
-2. Uruchom backend i frontend.
-3. Wywołaj kontrolowany błąd backendu:
+1. Set DSNs locally for backend and frontend.
+2. Start backend and frontend.
+3. Trigger a controlled backend error:
 
 ```bash
 curl http://localhost:3000/debug/sentry
 ```
 
-Endpoint jest dostępny tylko poza `NODE_ENV=production`.
+The endpoint is available only outside `NODE_ENV=production`.
 
-4. Wywołaj kontrolowany błąd frontendu w konsoli przeglądarki:
+4. Trigger a controlled frontend error in the browser console:
 
 ```js
 window.__MYRESCAL_TEST_SENTRY__()
 ```
 
-Funkcja jest dostępna tylko w trybie dev Vite.
+The function is available only in Vite dev mode.
 
-4. Sprawdź w Sentry, czy event zawiera:
-   - request id,
-   - endpoint,
-   - user id dla requestu po zalogowaniu.
-5. Jeśli eventy pojawiają się poprawnie, nie trzeba usuwać hooków testowych, bo są wyłączone w produkcji.
+5. Check in Sentry that the event contains:
+   - request id;
+   - endpoint;
+   - user id for an authenticated request.
+6. If events appear correctly, the test hooks do not need to be removed because they are disabled in production.
 
-Nie dodawać stałego endpointu typu `/debug-sentry` do produkcji bez zabezpieczenia.
+Do not add a permanent `/debug-sentry` style endpoint to production without protection.
 
-## Bundle size
+## Bundle Size
 
-Po włączeniu Sentry frontend bundle rośnie. Przed release warto rozważyć osobny chunk dla Sentry albo późniejszą inicjalizację monitoringu, jeśli rozmiar paczki stanie się problemem dla Android/Web.
+After enabling Sentry, the frontend bundle grows. Before release, consider a separate Sentry chunk or later monitoring initialization if bundle size becomes a problem for Android/Web.

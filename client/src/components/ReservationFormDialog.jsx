@@ -26,9 +26,12 @@ import { FaSave, FaTimes } from 'react-icons/fa';
 import { useLocale } from '../context/LocaleContext.jsx';
 import { isApiErrorCode } from '../api/errorUtils.js';
 import {
+  DEFAULT_CONFIRMATION_METHOD,
   DEFAULT_RESERVATION_STATUS,
+  RESERVATION_CONFIRMATION_METHOD_OPTIONS,
   RESERVATION_STATUS_OPTIONS,
   RESERVATION_STATUS_META,
+  normalizeConfirmationMethod,
 } from '../utils/reservationStatus.js';
 
 const DEFAULT_FORM_VALUES = {
@@ -46,6 +49,7 @@ const DEFAULT_FORM_VALUES = {
   adults: '',
   children: '',
   status: DEFAULT_RESERVATION_STATUS,
+  confirmation_method: DEFAULT_CONFIRMATION_METHOD,
 };
 
 const ADULT_OPTIONS = Array.from({ length: 6 }, (_, index) => String(index + 1));
@@ -278,6 +282,7 @@ const deriveNightlyRateFromStoredTotal = (values = {}) => {
 
 const normalizeReservationStatus = (status) => {
   const normalized = String(status || '').trim();
+  if (normalized === 'booking') return 'confirmed';
   if (!normalized || !Object.prototype.hasOwnProperty.call(RESERVATION_STATUS_META, normalized)) {
     return DEFAULT_RESERVATION_STATUS;
   }
@@ -309,11 +314,23 @@ const toFormValues = (values = {}) => {
       return;
     }
 
+    if (key === 'confirmation_method') {
+      mapped.confirmation_method = normalizeConfirmationMethod(value);
+      return;
+    }
+
     mapped[key] = value;
   });
 
   if (!hasValue(mapped.nightly_rate)) {
     mapped.nightly_rate = deriveNightlyRateFromStoredTotal(values);
+  }
+
+  if (mapped.status === 'confirmed') {
+    mapped.confirmation_method =
+      values.status === 'booking' && !values.confirmation_method
+        ? 'booking_com'
+        : normalizeConfirmationMethod(mapped.confirmation_method);
   }
 
   return mapped;
@@ -348,6 +365,10 @@ const toPayload = (values, totalPrice) => {
       values.status === 'deposit_paid'
         ? normalizeDecimalForPayload(values.deposit_amount) ?? 0
         : null,
+    confirmation_method:
+      values.status === 'confirmed'
+        ? normalizeConfirmationMethod(values.confirmation_method)
+        : null,
     notes: normalizeString(values.notes),
     adults: normalizeNumber(values.adults),
     children: normalizeNumber(values.children),
@@ -363,6 +384,9 @@ const validateForm = (values, t, derivedErrors) => {
   if (!values.property_id) return t('reservationForm.errors.property');
   if (!values.room_id) return t('reservationForm.errors.room');
   if (!values.status) return t('reservationForm.errors.status');
+  if (values.status === 'confirmed' && !values.confirmation_method) {
+    return t('reservationForm.errors.confirmationMethod');
+  }
 
   if (derivedErrors.email) return derivedErrors.email;
   if (derivedErrors.phone) return derivedErrors.phone;
@@ -413,6 +437,7 @@ function ReservationFormDialog({
   const [error, setError] = useState(null);
   const isMountedRef = useRef(true);
   const isDepositPaid = formValues.status === 'deposit_paid';
+  const isConfirmed = formValues.status === 'confirmed';
 
   useEffect(() => () => {
     isMountedRef.current = false;
@@ -590,6 +615,19 @@ function ReservationFormDialog({
     setFormValues((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  const handleStatusChange = (event) => {
+    const { value } = event.target;
+    setFormValues((prev) => ({
+      ...prev,
+      status: value,
+      deposit_amount: value === 'deposit_paid' ? prev.deposit_amount : '',
+      confirmation_method:
+        value === 'confirmed'
+          ? normalizeConfirmationMethod(prev.confirmation_method)
+          : DEFAULT_CONFIRMATION_METHOD,
     }));
   };
 
@@ -975,7 +1013,7 @@ function ReservationFormDialog({
                 name="status"
                 value={formValues.status}
                 label={t('reservationForm.fields.status')}
-                onChange={handleChange}
+                onChange={handleStatusChange}
               >
                 {RESERVATION_STATUS_OPTIONS.map((option) => (
                   <MenuItem
@@ -1016,6 +1054,27 @@ function ReservationFormDialog({
                   />
                 </Grid>
               </Grid>
+            ) : null}
+
+            {isConfirmed ? (
+              <FormControl required fullWidth sx={{ mt: { xs: 2, sm: 2.5 } }}>
+                <InputLabel id="confirmation-method-label">
+                  {t('reservationForm.fields.confirmationMethod')}
+                </InputLabel>
+                <Select
+                  labelId="confirmation-method-label"
+                  name="confirmation_method"
+                  value={formValues.confirmation_method}
+                  label={t('reservationForm.fields.confirmationMethod')}
+                  onChange={handleChange}
+                >
+                  {RESERVATION_CONFIRMATION_METHOD_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {t(option.labelKey)}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             ) : null}
           </Box>
 

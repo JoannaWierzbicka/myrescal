@@ -1,78 +1,104 @@
-## Supabase setup
+## Supabase Setup
 
-Uruchamiaj pliki SQL w Supabase SQL Editor (schema `public`) w tej kolejności:
+The current source of truth for database changes is:
 
-1. `properties_rooms.sql`
-2. `owner_profiles.sql`
-3. `reservations_rls.sql`
-4. `reservations_notes_pricing.sql`
-5. `reservations_no_overlap.sql` (najpierw sprawdź typy kolumn i wybierz właściwy wariant)
-6. `remove_confirmed_status.sql` (jeśli baza ma jeszcze stare rekordy/statusy `confirmed`)
-
----
-
-### Sprawdzenie typów `start_date` / `end_date`
-
-Przed uruchomieniem `reservations_no_overlap.sql` sprawdź typy:
-
-```sql
-select column_name, data_type, udt_name from information_schema.columns
-where table_schema='public' and table_name='reservations' and column_name in ('start_date','end_date','room_id');
+```text
+server/supabase/migrations/
 ```
 
-- Jeśli `start_date` i `end_date` to `date`, użyj wariantu `daterange(...)`.
-- Jeśli to `timestamp` lub `timestamptz`, użyj wariantu `tstzrange(...)`.
+Run migrations in Supabase SQL Editor in numeric order:
+
+1. `migrations/000_preflight_read_only.sql`
+2. `migrations/001_core_schema.sql`
+3. `migrations/002_owner_profiles.sql`
+4. `migrations/003_rls_policies.sql`
+5. `migrations/004_status_cleanup.sql`
+6. `migrations/005_reservations_no_overlap_auto.sql`
+7. `migrations/007_confirmed_reservations.sql`
+8. `migrations/008_verify_post_deploy.sql`
+
+Detailed runbook:
+
+```text
+docs/operational/supabase-migrations.md
+```
 
 ---
 
-### Co robią pliki
+### What The Migrations Do
 
-- `properties_rooms.sql`:
-  - tworzy/uzupełnia `properties`, `rooms` i powiązania z `reservations`;
-  - tworzy indeksy i polityki RLS dla `properties` i `rooms`.
+- `000_preflight_read_only.sql`
+  - does not change anything;
+  - shows current tables, columns, constraints, RLS policies, and indexes;
+  - run it before schema changes and save the result.
 
-- `owner_profiles.sql`:
-  - tworzy tabelę `owner_profiles` na dane właściciela konta;
-  - wiąże profil z `auth.users(id)`;
-  - dodaje RLS owner-based (`auth.uid() = owner_id`).
+- `001_core_schema.sql`
+  - creates or updates `properties`, `rooms`, and `reservations`;
+  - adds missing reservation columns: `property_id`, `room_id`, `status`, `notes`, `nightly_rate`, `total_price`, `deposit_amount`, `confirmation_method`;
+  - copies legacy `price` into `total_price` if that column exists;
+  - adds pricing/status/confirmation constraints, foreign keys, and indexes.
 
-- `reservations_rls.sql`:
-  - włącza RLS na `reservations`;
-  - ustawia politykę owner-based (`auth.uid() = owner_id`) dla wszystkich operacji.
+- `002_owner_profiles.sql`
+  - creates the `owner_profiles` table;
+  - links profiles to `auth.users(id)`;
+  - adds length validation constraints.
 
-- `reservations_notes_pricing.sql`:
-  - dodaje pola `notes`, `nightly_rate`, `total_price`, `deposit_amount`;
-  - utrzymuje zgodność wsteczną dla legacy `price`.
+- `003_rls_policies.sql`
+  - enables RLS for `properties`, `rooms`, `reservations`, and `owner_profiles`;
+  - recreates owner-based policies.
 
-- `reservations_no_overlap.sql`:
-  - dodaje extension `btree_gist`;
-  - definiuje exclusion constraint `reservations_no_overlap`, blokujący nakładające się rezerwacje dla tego samego `room_id`.
+- `004_status_cleanup.sql`
+  - normalizes legacy reservation status values;
+  - recreates the reservation status constraint.
 
-- `remove_confirmed_status.sql`:
-  - zamienia stare `confirmed` na `preliminary`;
-  - odtwarza constraint statusów bez `confirmed`.
+- `005_reservations_no_overlap_auto.sql`
+  - adds `btree_gist`;
+  - checks whether date conflicts already exist;
+  - automatically chooses `daterange`, `tsrange`, or `tstzrange`;
+  - adds the `reservations_no_overlap` constraint.
+
+- `007_confirmed_reservations.sql`
+  - changes legacy `booking` reservation status values to `confirmed`;
+  - adds `confirmation_method`;
+  - requires `confirmation_method` for confirmed reservations.
+
+- `008_verify_post_deploy.sql`
+  - does not change anything;
+  - verifies RLS, constraints, and reservation conflicts after migration.
 
 ---
 
-### Wymagane ENV backendu
+### Rule
 
-W `server/.env` ustaw:
+The `server/supabase/` directory should contain only this README and the `migrations/` directory.
+
+New database changes must go through `server/supabase/migrations/`.
+
+---
+
+### Required Backend ENV
+
+Set these in `server/.env`:
+
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `AUTH_REQUIRE_EMAIL_CONFIRMATION=true` (zalecane; backend nie zwraca sesji po rejestracji i blokuje niepotwierdzone konta)
-- `AUTH_EMAIL_REDIRECT_URL` (opcjonalnie, adres powrotu po kliknięciu linku potwierdzającego email)
+- `AUTH_REQUIRE_EMAIL_CONFIRMATION=true` recommended
+- `AUTH_EMAIL_REDIRECT_URL` optional redirect URL after clicking the email confirmation link
 
 Legacy fallback:
-- `SUPABASE_KEY` (deprecated, tylko jako fallback dla service role).
 
-### Wymagane ustawienie Supabase Auth
+- `SUPABASE_KEY` deprecated, only as fallback for service role.
 
-Aby tworzyć tylko konta z realnym adresem email, włącz potwierdzanie emaila w Supabase:
+---
+
+### Required Supabase Auth Setting
+
+To create only accounts with a real email address, enable email confirmation in Supabase:
 
 1. Supabase Dashboard -> Authentication -> Providers -> Email.
-2. Włącz `Confirm email`.
-3. Ustaw `Site URL` i `Redirect URLs` na adres web app oraz docelowy adres aplikacji mobilnej/deep link, kiedy będzie gotowy.
-4. Jeśli używasz `AUTH_EMAIL_REDIRECT_URL`, dodaj ten URL do listy redirectów w Supabase.
+2. Enable `Confirm email`.
+3. Set `Site URL` and `Redirect URLs` to the web app URL and the future mobile deep link when it is ready.
+4. If you use `AUTH_EMAIL_REDIRECT_URL`, add that URL to Supabase redirect URLs.
 
-Uwaga: bez włączenia `Confirm email` Supabase może nie wysłać maila potwierdzającego. Backend domyślnie nie loguje użytkownika po rejestracji, ale wysyłka maila jest ustawieniem Supabase Auth, nie samego kodu aplikacji.
+Note: without `Confirm email`, Supabase may not send a confirmation email. The backend does not log a user in after registration by default, but email delivery is controlled by Supabase Auth settings, not only by application code.

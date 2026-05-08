@@ -123,8 +123,13 @@ export const translations = {
     reservationStatus: {
       preliminary: 'Preliminary',
       depositPaid: 'Deposit paid',
-      booking: 'Booking.com',
+      confirmed: 'Confirmed reservation',
       past: 'Past',
+    },
+    reservationConfirmationMethod: {
+      paidFull: 'Paid 100%',
+      bookingCom: 'Booking.com reservation',
+      other: 'Other',
     },
     reservationDetail: {
       title: 'Reservation Details',
@@ -182,6 +187,7 @@ export const translations = {
         adults: 'Adults',
         children: 'Children',
         status: 'Reservation status',
+        confirmationMethod: 'Confirmation method',
       },
       errors: {
         firstName: 'First name is required.',
@@ -192,6 +198,7 @@ export const translations = {
         property: 'Property is required.',
         room: 'Room is required.',
         status: 'Select reservation status.',
+        confirmationMethod: 'Select confirmation method.',
         invalidEmail: 'Invalid email.',
         invalidPhone: 'Invalid phone number.',
         invalidNightlyRate: 'Nightly rate must be a valid number.',
@@ -413,8 +420,13 @@ export const translations = {
     reservationStatus: {
       preliminary: 'Rezerwacja wstępna',
       depositPaid: 'Zaliczka opłacona',
-      booking: 'Rezerwacja z Booking.com',
+      confirmed: 'Rezerwacja potwierdzona',
       past: 'Rezerwacja przeszła',
+    },
+    reservationConfirmationMethod: {
+      paidFull: 'Opłacone 100%',
+      bookingCom: 'Rezerwacja z Booking.com',
+      other: 'Inne',
     },
     reservationDetail: {
       title: 'Szczegóły rezerwacji',
@@ -472,6 +484,7 @@ export const translations = {
         adults: 'Dorośli',
         children: 'Dzieci',
         status: 'Status rezerwacji',
+        confirmationMethod: 'Forma potwierdzenia',
       },
       errors: {
         firstName: 'Imię jest wymagane.',
@@ -482,6 +495,7 @@ export const translations = {
         property: 'Wybierz obiekt.',
         room: 'Wybierz pokój.',
         status: 'Wybierz status rezerwacji.',
+        confirmationMethod: 'Wybierz formę potwierdzenia.',
         invalidEmail: 'Nieprawidłowy adres e-mail.',
         invalidPhone: 'Nieprawidłowy numer telefonu.',
         invalidNightlyRate: 'Cena za dobę musi być poprawną liczbą.',

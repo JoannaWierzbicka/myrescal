@@ -52,9 +52,35 @@ describe('validateReservationPayload', () => {
 
   test('rejects invalid status', () => {
     assert.throws(
-      () => validateReservationPayload({ ...validPayload, status: 'confirmed' }),
+      () => validateReservationPayload({ ...validPayload, status: 'invalid' }),
       /Invalid status/,
     );
+  });
+
+  test('requires confirmation method for confirmed reservations', () => {
+    assert.throws(
+      () => validateReservationPayload({ ...validPayload, status: 'confirmed' }),
+      /confirmation_method/,
+    );
+  });
+
+  test('normalizes confirmed reservations with confirmation method', () => {
+    const result = validateReservationPayload({
+      ...validPayload,
+      status: 'confirmed',
+      confirmation_method: 'booking_com',
+    });
+
+    assert.equal(result.status, 'confirmed');
+    assert.equal(result.confirmation_method, 'booking_com');
+    assert.equal(result.deposit_amount, 50);
+  });
+
+  test('maps legacy booking status to confirmed booking.com confirmation', () => {
+    const result = validateReservationPayload({ ...validPayload, status: 'booking' });
+
+    assert.equal(result.status, 'confirmed');
+    assert.equal(result.confirmation_method, 'booking_com');
   });
 
   test('rejects non-integer guest counts', () => {

@@ -1,97 +1,101 @@
 # Auth SMTP Runbook (MyResCal)
 
-## Cel
+## Purpose
 
-Ten runbook opisuje konfigurację własnego SMTP dla maili Supabase Auth:
-- potwierdzenie rejestracji,
-- reset hasła,
-- przyszłe maile magic link / OTP, jeśli zostaną włączone.
+This runbook describes custom SMTP configuration for Supabase Auth emails:
 
-Domyślna wysyłka Supabase jest tylko testowa, ma niski limit i słabą kontrolę nad dostarczalnością. Przed produkcją Google Play / web production wymagany jest własny SMTP.
+- registration confirmation;
+- password reset;
+- future magic link / OTP emails, if enabled.
 
-## Rekomendowany dostawca na start: Resend
+Supabase's default email sender is for testing only. It has a low rate limit and weak deliverability control. Custom SMTP is required before Google Play / web production usage.
 
-Wymagania:
-1. Konto w Resend.
-2. Zweryfikowana domena wysyłkowa.
-3. Klucz API Resend.
+## Recommended Initial Provider: Resend
 
-Rekomendowana domena / adres:
-- domena auth: `auth.myrescal.com` albo główna domena aplikacji, jeśli nie ma osobnej subdomeny,
-- From email: `no-reply@myrescal.com` albo `no-reply@auth.myrescal.com`,
+Requirements:
+
+1. Resend account.
+2. Verified sending domain.
+3. Resend API key.
+
+Recommended domain/address:
+
+- auth domain: `auth.myrescal.com`, or the main application domain if there is no separate subdomain;
+- From email: `no-reply@myrescal.com` or `no-reply@auth.myrescal.com`;
 - Sender name: `MyResCal`.
 
-## Dane SMTP Resend
+## Resend SMTP Values
 
-W Supabase wpisz:
+Enter these in Supabase:
 
-| Pole Supabase | Wartość |
+| Supabase Field | Value |
 | --- | --- |
 | Host | `smtp.resend.com` |
 | Port | `587` |
 | Username | `resend` |
-| Password | klucz API z Resend |
-| Sender email | `no-reply@...` ze zweryfikowanej domeny |
+| Password | Resend API key |
+| Sender email | `no-reply@...` from a verified domain |
 | Sender name | `MyResCal` |
 
-Port `587` używa STARTTLS i jest dobrym domyślnym wyborem.
+Port `587` uses STARTTLS and is a good default.
 
-## Konfiguracja Supabase
+## Supabase Configuration
 
-W Supabase Dashboard:
+In Supabase Dashboard:
 
-1. `Authentication -> SMTP Settings` albo `Authentication -> Email -> SMTP` (nazwa zależy od wersji dashboardu).
-2. Włącz custom SMTP.
-3. Uzupełnij dane SMTP z sekcji powyżej.
-4. Zapisz konfigurację.
-5. W `Authentication -> Providers -> Email` upewnij się, że:
-   - `Allow new users to sign up` jest włączone,
-   - `Confirm email` jest włączone.
-6. W `Authentication -> URL Configuration` ustaw:
-   - `Site URL`: produkcyjny adres web app,
+1. Open `Authentication -> SMTP Settings` or `Authentication -> Email -> SMTP`; the label depends on the dashboard version.
+2. Enable custom SMTP.
+3. Fill in the SMTP values from the section above.
+4. Save the configuration.
+5. In `Authentication -> Providers -> Email`, make sure:
+   - `Allow new users to sign up` is enabled;
+   - `Confirm email` is enabled.
+6. In `Authentication -> URL Configuration`, set:
+   - `Site URL`: production web app URL;
    - `Redirect URLs`:
      - `http://localhost:5173/login`
      - `https://myrescal.vercel.app/login`
-     - przyszły deep link mobile, gdy będzie finalnie skonfigurowany.
+     - future mobile deep link when it is finalized.
 
-## ENV aplikacji
+## Application ENV
 
-Lokalnie w `server/.env`:
+Local `server/.env`:
 
 ```env
 AUTH_REQUIRE_EMAIL_CONFIRMATION=true
 AUTH_EMAIL_REDIRECT_URL=http://localhost:5173/login
 ```
 
-Produkcja w Render:
+Production on Render:
 
 ```env
 AUTH_REQUIRE_EMAIL_CONFIRMATION=true
 AUTH_EMAIL_REDIRECT_URL=https://myrescal.vercel.app/login
 ```
 
-## Test po konfiguracji
+## Test After Configuration
 
-1. Usuń testowego użytkownika z `Authentication -> Users`, jeśli był już wcześniej tworzony.
-2. Zarejestruj nowe konto przez aplikację.
-3. Sprawdź, czy mail:
-   - przychodzi z nazwy `MyResCal`,
-   - przychodzi z wybranego adresu `no-reply@...`,
-   - nie trafia do spamu.
-4. Kliknij link potwierdzający.
-5. Zaloguj się hasłem podanym przy rejestracji.
-6. Sprawdź `Authentication -> Logs`, czy nie ma błędów SMTP.
+1. Delete the test user from `Authentication -> Users` if it was already created.
+2. Register a new account through the application.
+3. Verify that the email:
+   - arrives from `MyResCal`;
+   - arrives from the selected `no-reply@...` address;
+   - does not land in spam.
+4. Click the confirmation link.
+5. Log in with the password used during registration.
+6. Check `Authentication -> Logs` for SMTP errors.
 
-## Jeśli mail trafia do spamu
+## If Email Lands In Spam
 
-Sprawdź w Resend/DNS:
-- SPF,
-- DKIM,
+Check in Resend/DNS:
+
+- SPF;
+- DKIM;
 - DMARC.
 
-Nie używaj treści marketingowych w mailach auth. Mail potwierdzający powinien być krótki i techniczny.
+Do not use marketing copy in auth emails. The confirmation email should be short and technical.
 
-## Źródła
+## Sources
 
 - Supabase custom SMTP: https://supabase.com/docs/guides/auth/auth-smtp
 - Supabase auth rate limits: https://supabase.com/docs/guides/auth/rate-limits
