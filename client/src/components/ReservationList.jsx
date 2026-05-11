@@ -298,7 +298,11 @@ function ReservationList({
             <ReservationCard
               key={reservation.id}
               reservation={reservation}
-              onView={() => navigate(`/dashboard/detail/${reservation.id}`)}
+              onView={() =>
+                navigate(`/dashboard/detail/${reservation.id}`, {
+                  state: { from: '/dashboard' },
+                })
+              }
               onEdit={() => onEditReservation?.(reservation)}
               onDelete={() => requestDelete(reservation)}
               disabled={pendingDeleteId === reservation.id}

@@ -237,7 +237,11 @@ export const translations = {
       emptyRooms: 'No rooms yet. Add your first room to start assigning reservations.',
       roomsInfo: 'Rooms defined here will appear in your reservation forms.',
       deletePropertyConfirm: 'Delete this property?',
+      deletePropertyWarning:
+        'This will remove the property and its rooms. Reservations connected with this property will no longer be available under it.',
       deleteRoomConfirm: 'Delete this room?',
+      deleteRoomWarning:
+        'Reservations connected with this room will no longer be available under this room.',
       deletePropertyTitle: 'Delete property',
       deleteRoomTitle: 'Delete room',
       selectPropertyHint: 'Select a property to manage its rooms.',
@@ -541,7 +545,11 @@ export const translations = {
       emptyRooms: 'Brak pokoi. Dodaj pierwszy pokój, aby przypisywać rezerwacje.',
       roomsInfo: 'Pokoje zdefiniowane tutaj pojawią się w formularzach rezerwacji.',
       deletePropertyConfirm: 'Usunąć ten obiekt?',
+      deletePropertyWarning:
+        'To usunie obiekt i jego pokoje. Rezerwacje powiązane z tym obiektem nie będą już dostępne w tym obiekcie.',
       deleteRoomConfirm: 'Usunąć ten pokój?',
+      deleteRoomWarning:
+        'Rezerwacje powiązane z tym pokojem nie będą już dostępne w tym pokoju.',
       deletePropertyTitle: 'Usuń obiekt',
       deleteRoomTitle: 'Usuń pokój',
       selectPropertyHint: 'Wybierz obiekt, aby zarządzać pokojami.',

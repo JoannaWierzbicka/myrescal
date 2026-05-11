@@ -1,10 +1,16 @@
 import { Router } from 'express';
-import { getSupabaseAdmin, getSupabaseUser } from './supabaseClient.js';
+import { getSupabaseUser } from './supabaseClient.js';
 import { requireAuth } from './requireAuth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { createHttpError } from '../utils/httpError.js';
 import { mapSupabaseError } from '../utils/mapSupabaseError.js';
 import { validateOwnerProfilePayload } from '../validators/profileValidator.js';
+import { findOwnerProfile } from '../repositories/ownerProfileRepository.js';
+import { createEmailExistsError, mapAuthProviderError } from './authErrors.js';
+import {
+  findAuthUserByEmail,
+  maybeCreateOwnerProfileFromUserMetadata,
+} from '../services/authService.js';
 
 const router = Router();
 const authRedirectUrl = process.env.AUTH_EMAIL_REDIRECT_URL || process.env.CLIENT_URL || null;
@@ -119,11 +125,10 @@ router.get(
   asyncHandler(async (req, res) => {
     const user = req.user;
     const supabase = getSupabaseUser(req.accessToken);
-    const { data: profile, error: profileError } = await supabase
-      .from('owner_profiles')
-      .select('*')
-      .eq('owner_id', user.id)
-      .maybeSingle();
+    const { data: profile, error: profileError } = await findOwnerProfile({
+      supabase,
+      ownerId: user.id,
+    });
 
     if (profileError) {
       throw mapSupabaseError(profileError, profileError.status === 406 ? 404 : profileError.status);
@@ -145,129 +150,3 @@ router.get(
 );
 
 export default router;
-
-function createEmailExistsError(details = null) {
-  return createHttpError(
-    409,
-    'An account with this email already exists.',
-    details,
-    'AUTH_EMAIL_EXISTS',
-  );
-}
-
-function mapAuthProviderError(error, { fallbackStatus, fallbackMessage }) {
-  const message = error?.message || fallbackMessage;
-  const normalizedMessage = message.toLowerCase();
-
-  if (
-    error?.code === 'email_exists' ||
-    (normalizedMessage.includes('already') &&
-      (normalizedMessage.includes('registered') || normalizedMessage.includes('exists')))
-  ) {
-    return createEmailExistsError(error?.details);
-  }
-
-  if (normalizedMessage.includes('invalid login credentials')) {
-    return createHttpError(
-      401,
-      'Invalid email or password.',
-      error?.details,
-      'AUTH_INVALID_CREDENTIALS',
-    );
-  }
-
-  if (normalizedMessage.includes('email not confirmed')) {
-    return createHttpError(
-      403,
-      'Please confirm your email address before logging in.',
-      error?.details,
-      'AUTH_EMAIL_NOT_CONFIRMED',
-    );
-  }
-
-  return createHttpError(
-    error?.status || fallbackStatus,
-    message || fallbackMessage,
-    error?.details,
-    'AUTH_PROVIDER_ERROR',
-  );
-}
-
-async function findAuthUserByEmail(email) {
-  const normalizedEmail = normalizeEmail(email);
-  if (!normalizedEmail) {
-    return null;
-  }
-
-  const supabaseAdmin = getSupabaseAdmin();
-  const perPage = 1000;
-  let page = 1;
-
-  while (true) {
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
-
-    if (error) {
-      throw mapAuthProviderError(error, {
-        fallbackStatus: 500,
-        fallbackMessage: 'Unable to verify user registration status.',
-      });
-    }
-
-    const users = Array.isArray(data?.users) ? data.users : [];
-    const existingUser = users.find((user) => normalizeEmail(user.email) === normalizedEmail);
-    if (existingUser) {
-      return existingUser;
-    }
-
-    if (!data?.nextPage || users.length === 0) {
-      return null;
-    }
-
-    page = data.nextPage;
-  }
-}
-
-function normalizeEmail(email) {
-  return String(email || '').trim().toLowerCase();
-}
-
-async function upsertOwnerProfile(ownerId, profile) {
-  const supabaseAdmin = getSupabaseAdmin();
-  const { data, error } = await supabaseAdmin
-    .from('owner_profiles')
-    .upsert(
-      {
-        owner_id: ownerId,
-        ...profile,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'owner_id' },
-    )
-    .select('*')
-    .maybeSingle();
-
-  if (error) {
-    throw mapSupabaseError(error);
-  }
-
-  return data ?? null;
-}
-
-async function maybeCreateOwnerProfileFromUserMetadata(user) {
-  const metadata = user?.user_metadata || {};
-  const firstName = metadata.first_name;
-  const lastName = metadata.last_name;
-
-  if (!user?.id || !firstName || !lastName) {
-    return null;
-  }
-
-  const profile = validateOwnerProfilePayload({
-    firstName,
-    lastName,
-    phone: metadata.phone ?? null,
-    companyName: metadata.company_name ?? null,
-  });
-
-  return upsertOwnerProfile(user.id, profile);
-}

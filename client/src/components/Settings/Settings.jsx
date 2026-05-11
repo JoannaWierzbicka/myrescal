@@ -496,6 +496,11 @@ export default function Settings() {
               ? t('settings.deletePropertyConfirm')
               : t('settings.deleteRoomConfirm')}
           </Typography>
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            {confirmDialog?.type === 'property'
+              ? t('settings.deletePropertyWarning')
+              : t('settings.deleteRoomWarning')}
+          </Alert>
           {confirmDialog?.entity?.name && (
             <Typography variant="subtitle2" sx={{ mt: 1.5 }}>
               {confirmDialog.entity.name}

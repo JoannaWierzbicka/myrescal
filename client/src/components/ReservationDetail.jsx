@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Link, useLoaderData, useNavigate } from 'react-router-dom';
+import { Fragment, useCallback, useMemo, useState } from 'react';
+import { Link, useLoaderData, useLocation, useNavigate } from 'react-router-dom';
 import { deleteReservation } from '../api/reservations.js';
 import {
   Alert,
@@ -33,6 +33,7 @@ import { getReservationStatusMeta } from '../utils/reservationStatus.js';
 function ReservationDetail() {
   const reservation = useLoaderData() ?? {};
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [isDeleting, setIsDeleting] = useState(false);
@@ -51,6 +52,10 @@ function ReservationDetail() {
   const guestName = [reservation.name, reservation.lastname].filter(Boolean).join(' ') || '—';
   const propertyName = reservation.property?.name || '—';
   const roomName = reservation.room?.name || '—';
+  const backPath = useMemo(() => {
+    const from = location.state?.from;
+    return from === '/dashboard/calendar' || from === '/dashboard' ? from : '/dashboard';
+  }, [location.state]);
 
   const formatDate = useCallback(
     (value) => {
@@ -104,7 +109,7 @@ function ReservationDetail() {
     <Box sx={{ maxWidth: 980, mx: 'auto', pb: { xs: 11, sm: 0 } }}>
       <Stack spacing={{ xs: 2, md: 2.5 }}>
         <Stack direction="row" alignItems="center" spacing={1} sx={{ display: { xs: 'none', sm: 'flex' } }}>
-          <IconButton component={Link} to="/dashboard" aria-label={t('reservationDetail.back')} size="small">
+          <IconButton component={Link} to={backPath} aria-label={t('reservationDetail.back')} size="small">
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="body2" color="text.secondary">
@@ -157,7 +162,7 @@ function ReservationDetail() {
             <Stack direction="row" justifyContent="flex-start" alignItems="center" sx={{ mb: { xs: 2, sm: 3 } }}>
               <IconButton
                 component={Link}
-                to="/dashboard"
+                to={backPath}
                 aria-label={t('reservationDetail.back')}
                 sx={{
                   color: 'primary.contrastText',
@@ -282,7 +287,12 @@ function ReservationDetail() {
             <InfoGrid>
               <DetailItem label={t('reservationDetail.name')} value={guestName} />
               <DetailItem label={t('reservationDetail.phone')} value={reservation.phone || '—'} icon={<CallOutlinedIcon />} />
-              <DetailItem label={t('reservationDetail.email')} value={reservation.mail || '—'} icon={<MailOutlineIcon />} />
+              <DetailItem
+                label={t('reservationDetail.email')}
+                value={formatBreakableEmail(reservation.mail)}
+                icon={<MailOutlineIcon />}
+                valueSx={{ overflowWrap: 'break-word', wordBreak: 'normal' }}
+              />
               <DetailItem
                 label={t('reservationDetail.guests')}
                 value={t('reservationCard.guestsSummary', {
@@ -316,7 +326,7 @@ function ReservationDetail() {
         </Box>
 
         <Stack direction="row" spacing={1.25} sx={{ display: { xs: 'none', sm: 'flex' } }}>
-          <Button component={Link} to="/dashboard" variant="outlined" startIcon={<ArrowBackIcon />}>
+          <Button component={Link} to={backPath} variant="outlined" startIcon={<ArrowBackIcon />}>
             {t('reservationDetail.back')}
           </Button>
         </Stack>
@@ -485,7 +495,7 @@ function DatePanel({ label, value }) {
   );
 }
 
-function DetailItem({ label, value, icon }) {
+function DetailItem({ label, value, icon, valueSx }) {
   return (
     <Box sx={{ minWidth: 0, display: 'flex', gap: 1, alignItems: 'flex-start' }}>
       {icon ? (
@@ -503,12 +513,28 @@ function DetailItem({ label, value, icon }) {
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.35 }}>
           {label}
         </Typography>
-        <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 700, overflowWrap: 'anywhere' }}>
+        <Typography
+          variant="body2"
+          sx={{ color: 'text.primary', fontWeight: 700, overflowWrap: 'anywhere', ...valueSx }}
+        >
           {value}
         </Typography>
       </Box>
     </Box>
   );
+}
+
+function formatBreakableEmail(email) {
+  if (!email) return '—';
+
+  return String(email)
+    .split(/([@._-])/g)
+    .map((part, index) => (
+      <Fragment key={`${part}-${index}`}>
+        {part}
+        {part === '@' || part === '.' || part === '_' || part === '-' ? <wbr /> : null}
+      </Fragment>
+    ));
 }
 
 function ReservationHeroIllustration() {

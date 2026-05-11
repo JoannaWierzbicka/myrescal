@@ -245,7 +245,9 @@ export default function HomeOverview({ view = 'reservations' }) {
 
   const openReservationDetail = (reservation) => {
     if (!reservation?.id) return;
-    navigate(`/dashboard/detail/${reservation.id}`);
+    navigate(`/dashboard/detail/${reservation.id}`, {
+      state: { from: isCalendarView ? '/dashboard/calendar' : '/dashboard' },
+    });
   };
 
   const handleCreate = async (values) => {
