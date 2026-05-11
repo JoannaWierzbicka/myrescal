@@ -16,12 +16,18 @@ router.post(
   '/register',
   asyncHandler(async (req, res) => {
     const { email, password } = req.body || {};
-    const profile = validateOwnerProfilePayload(req.body);
-    const supabase = getSupabaseUser();
 
     if (!email || !password) {
       throw createHttpError(400, 'Email and password are required.', null, 'VALIDATION_ERROR');
     }
+
+    const existingUser = await findAuthUserByEmail(email);
+    if (existingUser) {
+      throw createEmailExistsError();
+    }
+
+    const profile = validateOwnerProfilePayload(req.body);
+    const supabase = getSupabaseUser();
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -140,17 +146,25 @@ router.get(
 
 export default router;
 
+function createEmailExistsError(details = null) {
+  return createHttpError(
+    409,
+    'An account with this email already exists.',
+    details,
+    'AUTH_EMAIL_EXISTS',
+  );
+}
+
 function mapAuthProviderError(error, { fallbackStatus, fallbackMessage }) {
   const message = error?.message || fallbackMessage;
   const normalizedMessage = message.toLowerCase();
 
-  if (normalizedMessage.includes('already') && normalizedMessage.includes('registered')) {
-    return createHttpError(
-      409,
-      'An account with this email already exists.',
-      error?.details,
-      'AUTH_EMAIL_EXISTS',
-    );
+  if (
+    error?.code === 'email_exists' ||
+    (normalizedMessage.includes('already') &&
+      (normalizedMessage.includes('registered') || normalizedMessage.includes('exists')))
+  ) {
+    return createEmailExistsError(error?.details);
   }
 
   if (normalizedMessage.includes('invalid login credentials')) {
@@ -177,6 +191,44 @@ function mapAuthProviderError(error, { fallbackStatus, fallbackMessage }) {
     error?.details,
     'AUTH_PROVIDER_ERROR',
   );
+}
+
+async function findAuthUserByEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) {
+    return null;
+  }
+
+  const supabaseAdmin = getSupabaseAdmin();
+  const perPage = 1000;
+  let page = 1;
+
+  while (true) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+
+    if (error) {
+      throw mapAuthProviderError(error, {
+        fallbackStatus: 500,
+        fallbackMessage: 'Unable to verify user registration status.',
+      });
+    }
+
+    const users = Array.isArray(data?.users) ? data.users : [];
+    const existingUser = users.find((user) => normalizeEmail(user.email) === normalizedEmail);
+    if (existingUser) {
+      return existingUser;
+    }
+
+    if (!data?.nextPage || users.length === 0) {
+      return null;
+    }
+
+    page = data.nextPage;
+  }
+}
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
 }
 
 async function upsertOwnerProfile(ownerId, profile) {

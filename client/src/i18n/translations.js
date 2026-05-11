@@ -8,6 +8,8 @@ export const translations = {
       loggingOut: 'Logging out...',
       login: 'Log In',
       register: 'Register',
+      addFirstProperty: 'Add first property',
+      addFirstRoom: 'Add first room',
       language: 'Language',
       roomSelector: 'Room',
       brandTagline: 'Manage reservations',
@@ -59,6 +61,11 @@ export const translations = {
       addReservation: 'Add reservation',
       reservations: 'Reservations',
       infoNoProperty: 'Add your first property in settings to start creating reservations.',
+      setup: {
+        addFirstProperty: 'Add your first property to start creating reservations.',
+        addFirstRoom: 'Add your first room to start creating reservations.',
+        goToSettings: 'Go to settings',
+      },
       errors: {
         properties: 'Unable to load properties.',
         rooms: 'Unable to load rooms.',
@@ -281,7 +288,7 @@ export const translations = {
       registerSuccessWithSpamNotice:
         'Registration successful! Please check your email to confirm your address. During testing, the message may come from Supabase and land in spam.',
       registerSuccessAutoLogin: 'Thank you for registering! You have been logged in.',
-      registerErrorExisting: 'An account with this email already exists.',
+      registerErrorExisting: 'An account with this email already exists. Please log in.',
       registerErrorGeneric: 'Something went wrong during registration.',
       emailNotConfirmed: 'Please confirm your email address before logging in.',
       confirmPasswordMismatch: 'Passwords must match.',
@@ -305,6 +312,8 @@ export const translations = {
       loggingOut: 'Wylogowywanie...',
       login: 'Zaloguj się',
       register: 'Zarejestruj się',
+      addFirstProperty: 'Dodaj pierwszy obiekt',
+      addFirstRoom: 'Dodaj pierwszy pokój',
       language: 'Język',
       roomSelector: 'Pokój',
       brandTagline: 'Zarządzaj rezerwacjami',
@@ -356,6 +365,11 @@ export const translations = {
       addReservation: 'Dodaj rezerwację',
       reservations: 'Rezerwacje',
       infoNoProperty: 'Dodaj pierwszy obiekt w ustawieniach, aby tworzyć rezerwacje.',
+      setup: {
+        addFirstProperty: 'Dodaj pierwszy obiekt, aby tworzyć rezerwacje.',
+        addFirstRoom: 'Dodaj pierwszy pokój, aby tworzyć rezerwacje.',
+        goToSettings: 'Przejdź do ustawień',
+      },
       errors: {
         properties: 'Nie udało się wczytać obiektów.',
         rooms: 'Nie udało się wczytać pokoi.',
@@ -578,7 +592,7 @@ export const translations = {
       registerSuccessWithSpamNotice:
         'Rejestracja zakończona! Sprawdź e-mail i potwierdź konto. W testach wiadomość może przyjść z Supabase i trafić do spamu.',
       registerSuccessAutoLogin: 'Dziękujemy za rejestrację! Zostałeś zalogowany.',
-      registerErrorExisting: 'Konto z tym adresem e-mail już istnieje.',
+      registerErrorExisting: 'Konto z tym adresem e-mail już istnieje. Zaloguj się.',
       registerErrorGeneric: 'Coś poszło nie tak podczas rejestracji.',
       emailNotConfirmed: 'Potwierdź adres e-mail przed logowaniem.',
       confirmPasswordMismatch: 'Hasła muszą być identyczne.',

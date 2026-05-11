@@ -12,10 +12,26 @@ import {
   validateReservationIdParam,
   validateReservationQuery,
 } from '../validators/requestSchemas.js';
+import {
+  calculateNumberOfNights,
+  createReservationOverlapError,
+  resolveDepositAmount,
+  resolveTotalPrice,
+  withComputedReservationStatus,
+} from '../utils/reservationRules.js';
+import {
+  createReservation,
+  deleteReservation,
+  findOwnedProperty,
+  findOwnedRoom,
+  findOverlappingReservations,
+  findReservationById,
+  findReservationOwnerRecord,
+  listReservations,
+  updateReservation,
+} from '../repositories/reservationRepository.js';
 
 const router = Router();
-const RESERVATION_OVERLAP_MESSAGE = 'Room is already booked for selected dates.';
-const RESERVATION_OVERLAP_CODE = 'RESERVATION_OVERLAP';
 
 router.use(requireAuth);
 
@@ -27,34 +43,13 @@ router.get(
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
 
-    let query = supabase
-      .from('reservations')
-      .select(`
-        *,
-        room:rooms (
-          id,
-          name,
-          property_id
-        ),
-        property:properties (
-          id,
-          name
-        )
-      `)
-      .eq('owner_id', ownerId)
-      .order('start_date', { ascending: true });
-
-    if (lastname) {
-      query = query.ilike('lastname', `${lastname}%`);
-    }
-    if (startDate) {
-      query = query.gte('start_date', startDate);
-    }
-    if (propertyId) {
-      query = query.eq('property_id', propertyId);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await listReservations({
+      supabase,
+      ownerId,
+      lastname,
+      startDate,
+      propertyId,
+    });
 
     if (error) {
       throw mapSupabaseError(error);
@@ -73,23 +68,7 @@ router.get(
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
 
-    const { data, error } = await supabase
-      .from('reservations')
-      .select(`
-        *,
-        room:rooms (
-          id,
-          name,
-          property_id
-        ),
-        property:properties (
-          id,
-          name
-        )
-      `)
-      .eq('id', id)
-      .eq('owner_id', ownerId)
-      .maybeSingle();
+    const { data, error } = await findReservationById({ supabase, ownerId, id });
 
     if (error) {
       throw mapSupabaseError(error, error.status === 406 ? 404 : error.status);
@@ -150,22 +129,7 @@ router.post(
       insertPayload.status = DEFAULT_RESERVATION_STATUS;
     }
 
-    const { data, error } = await supabase
-      .from('reservations')
-      .insert(insertPayload)
-      .select(`
-        *,
-        room:rooms (
-          id,
-          name,
-          property_id
-        ),
-        property:properties (
-          id,
-          name
-        )
-      `)
-      .maybeSingle();
+    const { data, error } = await createReservation({ supabase, payload: insertPayload });
 
     if (error) {
       if (isReservationOverlapError(error)) {
@@ -224,24 +188,12 @@ router.put(
       delete updatePayload.status;
     }
 
-    const { data, error } = await supabase
-      .from('reservations')
-      .update(updatePayload)
-      .eq('id', id)
-      .eq('owner_id', ownerId)
-      .select(`
-        *,
-        room:rooms (
-          id,
-          name,
-          property_id
-        ),
-        property:properties (
-          id,
-          name
-        )
-      `)
-      .maybeSingle();
+    const { data, error } = await updateReservation({
+      supabase,
+      ownerId,
+      id,
+      payload: updatePayload,
+    });
 
     if (error) {
       if (isReservationOverlapError(error)) {
@@ -265,12 +217,10 @@ router.delete(
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
 
-    const { data: existingReservation, error: existingReservationError } = await supabase
-      .from('reservations')
-      .select('id')
-      .eq('id', id)
-      .eq('owner_id', ownerId)
-      .maybeSingle();
+    const {
+      data: existingReservation,
+      error: existingReservationError,
+    } = await findReservationOwnerRecord({ supabase, ownerId, id });
 
     if (existingReservationError) {
       throw mapSupabaseError(
@@ -283,11 +233,7 @@ router.delete(
       throw createHttpError(404, 'Not found');
     }
 
-    const { error } = await supabase
-      .from('reservations')
-      .delete()
-      .eq('id', id)
-      .eq('owner_id', ownerId);
+    const { error } = await deleteReservation({ supabase, ownerId, id });
 
     if (error) {
       throw mapSupabaseError(error, error.status === 406 ? 404 : error.status);
@@ -298,15 +244,6 @@ router.delete(
 );
 
 export default router;
-
-function createReservationOverlapError() {
-  return createHttpError(
-    409,
-    RESERVATION_OVERLAP_MESSAGE,
-    null,
-    RESERVATION_OVERLAP_CODE,
-  );
-}
 
 async function ensureOwnership(supabase, ownerId, propertyId, roomId) {
   const errors = [];
@@ -322,12 +259,11 @@ async function ensureOwnership(supabase, ownerId, propertyId, roomId) {
     throw errors[0];
   }
 
-  const { data: property, error: propertyError } = await supabase
-    .from('properties')
-    .select('id, name')
-    .eq('id', propertyId)
-    .eq('owner_id', ownerId)
-    .maybeSingle();
+  const { data: property, error: propertyError } = await findOwnedProperty({
+    supabase,
+    ownerId,
+    propertyId,
+  });
 
   if (propertyError) {
     throw mapSupabaseError(
@@ -341,12 +277,11 @@ async function ensureOwnership(supabase, ownerId, propertyId, roomId) {
     throw createHttpError(404, 'Property not found.');
   }
 
-  const { data: room, error: roomError } = await supabase
-    .from('rooms')
-    .select('id, property_id, name')
-    .eq('id', roomId)
-    .eq('owner_id', ownerId)
-    .maybeSingle();
+  const { data: room, error: roomError } = await findOwnedRoom({
+    supabase,
+    ownerId,
+    roomId,
+  });
 
   if (roomError) {
     throw mapSupabaseError(
@@ -379,19 +314,14 @@ async function ensureRoomAvailability({
     return;
   }
 
-  let query = supabase
-    .from('reservations')
-    .select('id, start_date, end_date')
-    .eq('owner_id', ownerId)
-    .eq('room_id', roomId)
-    .lt('start_date', endDate)
-    .gt('end_date', startDate);
-
-  if (excludeReservationId) {
-    query = query.neq('id', excludeReservationId);
-  }
-
-  const { data, error } = await query;
+  const { data, error } = await findOverlappingReservations({
+    supabase,
+    ownerId,
+    roomId,
+    startDate,
+    endDate,
+    excludeReservationId,
+  });
 
   if (error) {
     throw mapSupabaseError(error);
@@ -400,100 +330,4 @@ async function ensureRoomAvailability({
   if (Array.isArray(data) && data.length > 0) {
     throw createReservationOverlapError();
   }
-}
-
-function withComputedReservationStatus(reservations) {
-  if (!Array.isArray(reservations) || reservations.length === 0) {
-    return reservations;
-  }
-
-  const now = new Date();
-  return reservations.map((reservation) => {
-    if (!reservation) {
-      return reservation;
-    }
-
-    const endDate = reservation.end_date ? new Date(reservation.end_date) : null;
-    const isPastByDate = Boolean(
-      endDate && !Number.isNaN(endDate.getTime()) && endDate < now,
-    );
-    const computedStatus = isPastByDate ? 'past' : reservation.status;
-
-    return {
-      ...reservation,
-      computedStatus,
-      isPast: computedStatus === 'past',
-    };
-  });
-}
-
-function parseDateToUtcDay(dateValue) {
-  const value = String(dateValue || '');
-  const parts = value.split('-');
-  if (parts.length !== 3) {
-    throw createHttpError(400, 'Invalid reservation dates.');
-  }
-
-  const [yearRaw, monthRaw, dayRaw] = parts;
-  const year = Number(yearRaw);
-  const month = Number(monthRaw);
-  const day = Number(dayRaw);
-
-  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
-    throw createHttpError(400, 'Invalid reservation dates.');
-  }
-
-  const utcTimestamp = Date.UTC(year, month - 1, day);
-  const parsedDate = new Date(utcTimestamp);
-
-  if (
-    Number.isNaN(parsedDate.getTime()) ||
-    parsedDate.getUTCFullYear() !== year ||
-    parsedDate.getUTCMonth() !== month - 1 ||
-    parsedDate.getUTCDate() !== day
-  ) {
-    throw createHttpError(400, 'Invalid reservation dates.');
-  }
-
-  return utcTimestamp;
-}
-
-function calculateNumberOfNights(startDate, endDate) {
-  const startUtc = parseDateToUtcDay(startDate);
-  const endUtc = parseDateToUtcDay(endDate);
-  const differenceMs = endUtc - startUtc;
-  const nights = differenceMs / (1000 * 60 * 60 * 24);
-
-  if (!Number.isFinite(nights) || nights <= 0) {
-    throw createHttpError(400, 'End date must be after the start date.');
-  }
-
-  return nights;
-}
-
-function resolveTotalPrice(reservation, numberOfNights) {
-  if (reservation.nightly_rate !== null && reservation.nightly_rate !== undefined) {
-    return Number((reservation.nightly_rate * numberOfNights).toFixed(2));
-  }
-
-  if (reservation.total_price !== null && reservation.total_price !== undefined) {
-    return reservation.total_price;
-  }
-
-  return null;
-}
-
-function resolveDepositAmount(reservation, totalPrice) {
-  if (reservation.status !== 'deposit_paid') {
-    return null;
-  }
-
-  const depositAmount = reservation.deposit_amount ?? 0;
-  const comparableTotalPrice = totalPrice ?? 0;
-
-  if (depositAmount > comparableTotalPrice) {
-    throw createHttpError(400, 'Field "deposit_amount" cannot be greater than "total_price".');
-  }
-
-  return depositAmount;
 }

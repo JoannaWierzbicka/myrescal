@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addDays, format, startOfToday } from 'date-fns';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import ReservationFormDialog from './ReservationFormDialog.jsx';
+import ReservationSetupPrompt from './ReservationSetupPrompt.jsx';
 import { createReservation } from '../api/reservations.js';
 import { useLocale } from '../context/LocaleContext.jsx';
 import { DEFAULT_RESERVATION_STATUS } from '../utils/reservationStatus.js';
 import { useReservationFormData } from '../hooks/useReservationFormData.js';
+import { useReservationSetupStatus } from '../hooks/useReservationSetupStatus.js';
 
 const formatDateInput = (date) => format(date, 'yyyy-MM-dd');
 
@@ -40,6 +44,7 @@ function AddReservation() {
     loading,
     errors,
   } = useReservationFormData('', errorMessages);
+  const reservationSetup = useReservationSetupStatus();
   const [initialValues, setInitialValues] = useState(() => buildInitialValues());
 
   useEffect(() => {
@@ -59,6 +64,22 @@ function AddReservation() {
   };
 
   const handleCancel = () => navigate('/dashboard');
+
+  if (reservationSetup.loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!reservationSetup.canCreateReservation) {
+    return (
+      <Box sx={{ px: { xs: 0, sm: 1, md: 2 }, pt: { xs: 0.5, sm: 1.5, md: 2 } }}>
+        <ReservationSetupPrompt missingStep={reservationSetup.missingStep} />
+      </Box>
+    );
+  }
 
   return (
     <ReservationFormDialog

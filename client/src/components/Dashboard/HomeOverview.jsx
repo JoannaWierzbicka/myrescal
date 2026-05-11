@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import ReservationCalendar from '../ReservationCalendar.jsx';
 import ReservationList from '../ReservationList.jsx';
 import ReservationFormDialog from '../ReservationFormDialog.jsx';
+import ReservationSetupPrompt from '../ReservationSetupPrompt.jsx';
 import AppLoader from '../AppLoader.jsx';
 import { fetchProperties } from '../../api/properties.js';
 import { fetchRooms } from '../../api/rooms.js';
@@ -55,6 +56,9 @@ export default function HomeOverview({ view = 'reservations' }) {
     initialValues: null,
   });
   const showLoaderOverlay = loadingProperties || loadingRooms || loadingReservations;
+  const missingSetupStep = !selectedPropertyId
+    ? 'properties'
+    : (!loadingRooms && rooms.length === 0 ? 'rooms' : null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -374,10 +378,8 @@ export default function HomeOverview({ view = 'reservations' }) {
 
       {propertiesError && <Alert severity="error">{propertiesError}</Alert>}
 
-      {!selectedPropertyId && !loadingProperties ? (
-        <Alert severity="info">
-          {t('dashboard.infoNoProperty')}
-        </Alert>
+      {missingSetupStep && !loadingProperties ? (
+        <ReservationSetupPrompt missingStep={missingSetupStep} />
       ) : (
         <>
           {isCalendarView ? (

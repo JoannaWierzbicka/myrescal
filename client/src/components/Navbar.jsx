@@ -28,6 +28,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useLocale } from '../context/LocaleContext.jsx';
+import { useReservationSetupStatus } from '../hooks/useReservationSetupStatus.js';
 import AppLogo from './AppLogo.jsx';
 
 const mobileNavSx = {
@@ -48,10 +49,24 @@ export default function Navbar() {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
   const [menuOpen, setMenuOpen] = useState(false);
+  const reservationSetup = useReservationSetupStatus({
+    enabled: isAuthenticated,
+    refreshKey: location.pathname,
+  });
 
   const userLabel = user?.email || user?.phone || null;
   const toggleLanguage = () => setLanguage(language === 'en' ? 'pl' : 'en');
   const languageLabel = language === 'en' ? 'PL' : 'EN';
+  const addReservationTarget = reservationSetup.canCreateReservation
+    ? '/dashboard/add'
+    : '/dashboard/settings';
+  const addReservationLabel = reservationSetup.canCreateReservation
+    ? t('navbar.addReservation')
+    : t(
+      reservationSetup.missingStep === 'rooms'
+        ? 'navbar.addFirstRoom'
+        : 'navbar.addFirstProperty',
+    );
 
   const activeMobileTab = useMemo(() => {
     if (location.pathname.includes('/settings')) return null;
@@ -160,8 +175,14 @@ export default function Navbar() {
                   <Button component={NavLink} to="/dashboard" end variant="text" startIcon={<ListAltOutlinedIcon />}>
                     {t('reservationList.title')}
                   </Button>
-                  <Button component={NavLink} to="/dashboard/add" variant="contained" color="primary">
-                    {t('navbar.addReservation')}
+                  <Button
+                    component={NavLink}
+                    to={addReservationTarget}
+                    variant="contained"
+                    color="primary"
+                    disabled={reservationSetup.loading}
+                  >
+                    {addReservationLabel}
                   </Button>
                   <Button component={NavLink} to="/dashboard/settings" variant="outlined">
                     {t('navbar.settings')}
@@ -285,22 +306,24 @@ export default function Navbar() {
 
       {!isDesktop && isAuthenticated ? (
         <Box sx={mobileNavSx}>
-          <Fab
-            color="primary"
-            aria-label={t('navbar.addReservation')}
-            onClick={() => navigate('/dashboard/add')}
-            sx={{
-              position: 'absolute',
-              left: '50%',
-              top: -28,
-              transform: 'translateX(-50%)',
-              width: 58,
-              height: 58,
-              boxShadow: '0 16px 30px rgba(15, 76, 79, 0.3)',
-            }}
-          >
-            <AddIcon />
-          </Fab>
+          {reservationSetup.canCreateReservation ? (
+            <Fab
+              color="primary"
+              aria-label={t('navbar.addReservation')}
+              onClick={() => navigate('/dashboard/add')}
+              sx={{
+                position: 'absolute',
+                left: '50%',
+                top: -28,
+                transform: 'translateX(-50%)',
+                width: 58,
+                height: 58,
+                boxShadow: '0 16px 30px rgba(15, 76, 79, 0.3)',
+              }}
+            >
+              <AddIcon />
+            </Fab>
+          ) : null}
           <BottomNavigation
             showLabels
             value={activeMobileTab}
