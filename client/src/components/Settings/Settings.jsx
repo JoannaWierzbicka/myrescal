@@ -35,6 +35,7 @@ import {
 import PropertyFormDialog from './PropertyFormDialog.jsx';
 import RoomFormDialog from './RoomFormDialog.jsx';
 import { useLocale } from '../../context/LocaleContext.jsx';
+import { notifyReservationSetupChanged } from '../../utils/reservationSetupEvents.js';
 
 export default function Settings() {
   const [properties, setProperties] = useState([]);
@@ -102,6 +103,7 @@ export default function Settings() {
     setProperties((prev) => [...prev, result]);
     setSelectedPropertyId(result.id);
     setPropertiesError(null);
+    notifyReservationSetupChanged();
   };
 
   const handleUpdateProperty = async (id, payload) => {
@@ -109,6 +111,7 @@ export default function Settings() {
     setProperties((prev) => prev.map((item) => (item.id === id ? updated : item)));
     setSelectedPropertyId(updated.id);
     setPropertiesError(null);
+    notifyReservationSetupChanged();
   };
 
   const deletePropertyById = async (id) => {
@@ -122,6 +125,7 @@ export default function Settings() {
       return next;
     });
     setPropertiesError(null);
+    notifyReservationSetupChanged();
   };
 
   const handleCreateRoom = async (payload) => {
@@ -130,6 +134,7 @@ export default function Settings() {
       setRooms((prev) => [...prev, result]);
     }
     setRoomsError(null);
+    notifyReservationSetupChanged();
   };
 
   const handleUpdateRoom = async (id, payload) => {
@@ -140,12 +145,14 @@ export default function Settings() {
       setRooms((prev) => prev.filter((room) => room.id !== id));
     }
     setRoomsError(null);
+    notifyReservationSetupChanged();
   };
 
   const deleteRoomById = async (id) => {
     await deleteRoom(id);
     setRooms((prev) => prev.filter((room) => room.id !== id));
     setRoomsError(null);
+    notifyReservationSetupChanged();
   };
 
   const requestDeleteProperty = (property) => {
@@ -489,6 +496,11 @@ export default function Settings() {
               ? t('settings.deletePropertyConfirm')
               : t('settings.deleteRoomConfirm')}
           </Typography>
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            {confirmDialog?.type === 'property'
+              ? t('settings.deletePropertyWarning')
+              : t('settings.deleteRoomWarning')}
+          </Alert>
           {confirmDialog?.entity?.name && (
             <Typography variant="subtitle2" sx={{ mt: 1.5 }}>
               {confirmDialog.entity.name}

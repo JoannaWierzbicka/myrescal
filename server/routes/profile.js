@@ -5,6 +5,10 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { createHttpError } from '../utils/httpError.js';
 import { mapSupabaseError } from '../utils/mapSupabaseError.js';
 import { validateOwnerProfilePayload } from '../validators/profileValidator.js';
+import {
+  findOwnerProfile,
+  upsertOwnerProfile,
+} from '../repositories/ownerProfileRepository.js';
 
 const router = Router();
 
@@ -16,11 +20,7 @@ router.get(
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
 
-    const { data, error } = await supabase
-      .from('owner_profiles')
-      .select('*')
-      .eq('owner_id', ownerId)
-      .maybeSingle();
+    const { data, error } = await findOwnerProfile({ supabase, ownerId });
 
     if (error) {
       throw mapSupabaseError(error, error.status === 406 ? 404 : error.status);
@@ -41,18 +41,11 @@ router.put(
     const supabase = getSupabaseUser(req.accessToken);
     const profile = validateOwnerProfilePayload(req.body);
 
-    const { data, error } = await supabase
-      .from('owner_profiles')
-      .upsert(
-        {
-          owner_id: ownerId,
-          ...profile,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'owner_id' },
-      )
-      .select('*')
-      .maybeSingle();
+    const { data, error } = await upsertOwnerProfile({
+      supabase,
+      ownerId,
+      payload: profile,
+    });
 
     if (error) {
       throw mapSupabaseError(error);

@@ -6,6 +6,13 @@ import { createHttpError } from '../utils/httpError.js';
 import { mapSupabaseError } from '../utils/mapSupabaseError.js';
 import { validatePropertyPayload } from '../validators/propertyValidator.js';
 import { validateIdParam } from '../validators/requestSchemas.js';
+import {
+  createProperty,
+  deleteProperty,
+  findPropertyOwnerRecord,
+  listProperties,
+  updateProperty,
+} from '../repositories/propertyRepository.js';
 
 const router = Router();
 
@@ -17,11 +24,7 @@ router.get(
     const ownerId = req.user.id;
     const supabase = getSupabaseUser(req.accessToken);
 
-    const { data, error } = await supabase
-      .from('properties')
-      .select('*')
-      .eq('owner_id', ownerId)
-      .order('created_at', { ascending: true });
+    const { data, error } = await listProperties({ supabase, ownerId });
 
     if (error) {
       throw mapSupabaseError(error);
@@ -38,11 +41,7 @@ router.post(
     const supabase = getSupabaseUser(req.accessToken);
     const property = validatePropertyPayload(req.body);
 
-    const { data, error } = await supabase
-      .from('properties')
-      .insert({ ...property, owner_id: ownerId })
-      .select('*')
-      .maybeSingle();
+    const { data, error } = await createProperty({ supabase, ownerId, payload: property });
 
     if (error) {
       throw mapSupabaseError(error);
@@ -60,13 +59,7 @@ router.put(
     const id = validateIdParam(req.params);
     const property = validatePropertyPayload(req.body);
 
-    const { data, error } = await supabase
-      .from('properties')
-      .update(property)
-      .eq('id', id)
-      .eq('owner_id', ownerId)
-      .select('*')
-      .maybeSingle();
+    const { data, error } = await updateProperty({ supabase, ownerId, id, payload: property });
 
     if (error) {
       throw mapSupabaseError(error, error.status === 406 ? 404 : error.status);
@@ -87,12 +80,11 @@ router.delete(
     const supabase = getSupabaseUser(req.accessToken);
     const id = validateIdParam(req.params);
 
-    const { data: existingProperty, error: existingPropertyError } = await supabase
-      .from('properties')
-      .select('id')
-      .eq('id', id)
-      .eq('owner_id', ownerId)
-      .maybeSingle();
+    const { data: existingProperty, error: existingPropertyError } = await findPropertyOwnerRecord({
+      supabase,
+      ownerId,
+      id,
+    });
 
     if (existingPropertyError) {
       throw mapSupabaseError(
@@ -105,11 +97,7 @@ router.delete(
       throw createHttpError(404, 'Not found');
     }
 
-    const { error } = await supabase
-      .from('properties')
-      .delete()
-      .eq('id', id)
-      .eq('owner_id', ownerId);
+    const { error } = await deleteProperty({ supabase, ownerId, id });
 
     if (error) {
       throw mapSupabaseError(error, error.status === 406 ? 404 : error.status);

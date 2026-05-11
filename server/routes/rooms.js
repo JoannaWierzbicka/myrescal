@@ -6,10 +6,21 @@ import { createHttpError } from '../utils/httpError.js';
 import { mapSupabaseError } from '../utils/mapSupabaseError.js';
 import { validateRoomPayload } from '../validators/roomValidator.js';
 import { validateIdParam, validateRoomsQuery } from '../validators/requestSchemas.js';
+import {
+  createRoom,
+  deleteRoom,
+  findRoomOwnerRecord,
+  listRooms,
+  updateRoom,
+} from '../repositories/roomRepository.js';
+import {
+  createRoomNameUniqueError,
+  ensurePropertyBelongsToOwner,
+  ensureUniqueRoomNameWithinProperty,
+  isRoomNameUniqueViolation,
+} from '../services/roomService.js';
 
 const router = Router();
-const ROOM_UNIQUE_NAME_ERROR = 'Room name must be unique within this property.';
-const ROOM_UNIQUE_NAME_CODE = 'ROOM_NAME_NOT_UNIQUE';
 
 router.use(requireAuth);
 
@@ -20,17 +31,7 @@ router.get(
     const supabase = getSupabaseUser(req.accessToken);
     const { property_id: propertyId } = validateRoomsQuery(req.query);
 
-    let query = supabase
-      .from('rooms')
-      .select('*')
-      .eq('owner_id', ownerId)
-      .order('created_at', { ascending: true });
-
-    if (propertyId) {
-      query = query.eq('property_id', propertyId);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await listRooms({ supabase, ownerId, propertyId });
 
     if (error) {
       throw mapSupabaseError(error);
@@ -47,21 +48,7 @@ router.post(
     const supabase = getSupabaseUser(req.accessToken);
     const room = validateRoomPayload(req.body);
 
-    // Ensure property belongs to owner
-    const { data: property, error: propertyError } = await supabase
-      .from('properties')
-      .select('id')
-      .eq('id', room.property_id)
-      .eq('owner_id', ownerId)
-      .maybeSingle();
-
-    if (propertyError) {
-      throw mapSupabaseError(propertyError, propertyError.status === 406 ? 404 : propertyError.status);
-    }
-
-    if (!property) {
-      throw createHttpError(404, 'Property not found.');
-    }
+    await ensurePropertyBelongsToOwner({ supabase, ownerId, propertyId: room.property_id });
 
     await ensureUniqueRoomNameWithinProperty({
       supabase,
@@ -70,15 +57,11 @@ router.post(
       roomName: room.name,
     });
 
-    const { data, error } = await supabase
-      .from('rooms')
-      .insert({ ...room, owner_id: ownerId })
-      .select('*')
-      .maybeSingle();
+    const { data, error } = await createRoom({ supabase, ownerId, payload: room });
 
     if (error) {
       if (isRoomNameUniqueViolation(error)) {
-        throw createHttpError(409, ROOM_UNIQUE_NAME_ERROR, null, ROOM_UNIQUE_NAME_CODE);
+        throw createRoomNameUniqueError();
       }
       throw mapSupabaseError(error);
     }
@@ -95,21 +78,7 @@ router.put(
     const id = validateIdParam(req.params);
     const room = validateRoomPayload(req.body);
 
-    // Ensure property belongs to owner
-    const { data: property, error: propertyError } = await supabase
-      .from('properties')
-      .select('id')
-      .eq('id', room.property_id)
-      .eq('owner_id', ownerId)
-      .maybeSingle();
-
-    if (propertyError) {
-      throw mapSupabaseError(propertyError, propertyError.status === 406 ? 404 : propertyError.status);
-    }
-
-    if (!property) {
-      throw createHttpError(404, 'Property not found.');
-    }
+    await ensurePropertyBelongsToOwner({ supabase, ownerId, propertyId: room.property_id });
 
     await ensureUniqueRoomNameWithinProperty({
       supabase,
@@ -119,17 +88,11 @@ router.put(
       excludeRoomId: id,
     });
 
-    const { data, error } = await supabase
-      .from('rooms')
-      .update(room)
-      .eq('id', id)
-      .eq('owner_id', ownerId)
-      .select('*')
-      .maybeSingle();
+    const { data, error } = await updateRoom({ supabase, ownerId, id, payload: room });
 
     if (error) {
       if (isRoomNameUniqueViolation(error)) {
-        throw createHttpError(409, ROOM_UNIQUE_NAME_ERROR, null, ROOM_UNIQUE_NAME_CODE);
+        throw createRoomNameUniqueError();
       }
       throw mapSupabaseError(error, error.status === 406 ? 404 : error.status);
     }
@@ -149,12 +112,11 @@ router.delete(
     const supabase = getSupabaseUser(req.accessToken);
     const id = validateIdParam(req.params);
 
-    const { data: existingRoom, error: existingRoomError } = await supabase
-      .from('rooms')
-      .select('id')
-      .eq('id', id)
-      .eq('owner_id', ownerId)
-      .maybeSingle();
+    const { data: existingRoom, error: existingRoomError } = await findRoomOwnerRecord({
+      supabase,
+      ownerId,
+      id,
+    });
 
     if (existingRoomError) {
       throw mapSupabaseError(
@@ -167,11 +129,7 @@ router.delete(
       throw createHttpError(404, 'Not found');
     }
 
-    const { error } = await supabase
-      .from('rooms')
-      .delete()
-      .eq('id', id)
-      .eq('owner_id', ownerId);
+    const { error } = await deleteRoom({ supabase, ownerId, id });
 
     if (error) {
       throw mapSupabaseError(error, error.status === 406 ? 404 : error.status);
@@ -182,45 +140,3 @@ router.delete(
 );
 
 export default router;
-
-async function ensureUniqueRoomNameWithinProperty({
-  supabase,
-  ownerId,
-  propertyId,
-  roomName,
-  excludeRoomId,
-}) {
-  const normalizedName = normalizeRoomName(roomName);
-
-  const { data, error } = await supabase
-    .from('rooms')
-    .select('id, name')
-    .eq('owner_id', ownerId)
-    .eq('property_id', propertyId);
-
-  if (error) {
-    throw mapSupabaseError(error);
-  }
-
-  const conflict = (data || []).find((existingRoom) => {
-    if (!existingRoom?.id || !existingRoom?.name) return false;
-    if (excludeRoomId && existingRoom.id === excludeRoomId) return false;
-    return normalizeRoomName(existingRoom.name) === normalizedName;
-  });
-
-  if (conflict) {
-    throw createHttpError(409, ROOM_UNIQUE_NAME_ERROR, null, ROOM_UNIQUE_NAME_CODE);
-  }
-}
-
-function normalizeRoomName(name) {
-  return String(name || '').trim().toLowerCase();
-}
-
-function isRoomNameUniqueViolation(error) {
-  const message = String(error?.message || '').toLowerCase();
-  return (
-    error?.code === '23505'
-    && (message.includes('rooms_property_name_unique') || message.includes('lower(btrim(name))'))
-  );
-}
