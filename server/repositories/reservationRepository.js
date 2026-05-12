@@ -81,6 +81,34 @@ export async function deleteReservation({ supabase, ownerId, id }) {
     .eq('owner_id', ownerId);
 }
 
+export async function deleteReservationsByProperty({ supabase, ownerId, propertyId }) {
+  return supabase
+    .from('reservations')
+    .delete()
+    .eq('owner_id', ownerId)
+    .eq('property_id', propertyId);
+}
+
+export async function deleteReservationsByRoom({ supabase, ownerId, roomId }) {
+  return supabase
+    .from('reservations')
+    .delete()
+    .eq('owner_id', ownerId)
+    .eq('room_id', roomId);
+}
+
+export async function deleteReservationsByRooms({ supabase, ownerId, roomIds }) {
+  if (!roomIds?.length) {
+    return { data: null, error: null };
+  }
+
+  return supabase
+    .from('reservations')
+    .delete()
+    .eq('owner_id', ownerId)
+    .in('room_id', roomIds);
+}
+
 export async function findOwnedProperty({ supabase, ownerId, propertyId }) {
   return supabase
     .from('properties')

@@ -30,6 +30,7 @@ Run files in this order:
 6. `005_reservations_no_overlap_auto.sql`
 7. `007_confirmed_reservations.sql`
 8. `008_verify_post_deploy.sql`
+9. `009_reservation_delete_cascade.sql`
 
 ## What To Check
 
@@ -47,6 +48,11 @@ After `008_verify_post_deploy.sql`, verify:
 - `legacy_booking_status_count = 0`.
 - `reservations_confirmation_method_check_exists = true`.
 - RLS policies exist for all four tables.
+
+After `009_reservation_delete_cascade.sql`, verify its final result shows `cascade` for:
+
+- `reservations_property_fk`,
+- `reservations_room_fk`.
 
 ## If The Overlap Migration Stops
 

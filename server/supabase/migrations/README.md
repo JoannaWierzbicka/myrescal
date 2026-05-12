@@ -12,6 +12,7 @@ Run files in Supabase SQL Editor in numeric order:
 6. `005_reservations_no_overlap_auto.sql`
 7. `007_confirmed_reservations.sql`
 8. `008_verify_post_deploy.sql`
+9. `009_reservation_delete_cascade.sql`
 
 Rules:
 

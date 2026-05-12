@@ -238,10 +238,10 @@ export const translations = {
       roomsInfo: 'Rooms defined here will appear in your reservation forms.',
       deletePropertyConfirm: 'Delete this property?',
       deletePropertyWarning:
-        'This will remove the property and its rooms. Reservations connected with this property will no longer be available under it.',
+        'This will permanently delete the property, its rooms, and all reservations connected with them.',
       deleteRoomConfirm: 'Delete this room?',
       deleteRoomWarning:
-        'Reservations connected with this room will no longer be available under this room.',
+        'This will permanently delete this room and all reservations connected with it.',
       deletePropertyTitle: 'Delete property',
       deleteRoomTitle: 'Delete room',
       selectPropertyHint: 'Select a property to manage its rooms.',
@@ -546,10 +546,10 @@ export const translations = {
       roomsInfo: 'Pokoje zdefiniowane tutaj pojawią się w formularzach rezerwacji.',
       deletePropertyConfirm: 'Usunąć ten obiekt?',
       deletePropertyWarning:
-        'To usunie obiekt i jego pokoje. Rezerwacje powiązane z tym obiektem nie będą już dostępne w tym obiekcie.',
+        'To trwale usunie obiekt, jego pokoje oraz wszystkie powiązane z nimi rezerwacje.',
       deleteRoomConfirm: 'Usunąć ten pokój?',
       deleteRoomWarning:
-        'Rezerwacje powiązane z tym pokojem nie będą już dostępne w tym pokoju.',
+        'To trwale usunie ten pokój oraz wszystkie powiązane z nim rezerwacje.',
       deletePropertyTitle: 'Usuń obiekt',
       deleteRoomTitle: 'Usuń pokój',
       selectPropertyHint: 'Wybierz obiekt, aby zarządzać pokojami.',
