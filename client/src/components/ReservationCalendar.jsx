@@ -18,26 +18,30 @@ import {
   addDays,
   addMonths,
   addWeeks,
-  differenceInCalendarDays,
   eachDayOfInterval,
   endOfMonth,
   format,
   isBefore,
   isSameDay,
-  isWithinInterval,
-  parseISO,
   startOfMonth,
   startOfToday,
   startOfWeek,
 } from 'date-fns';
 import { useLocale } from '../context/LocaleContext.jsx';
 import { getReservationStatusMeta } from '../utils/reservationStatus.js';
-
-const safeParseDate = (value) => {
-  if (!value) return null;
-  const parsed = parseISO(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
+import {
+  buildInitials,
+  buildRoomsFromReservations,
+  buildWeeklyReservationBlocks,
+  findReservationForDay,
+  getEffectiveReservationEnd,
+  getReservationLength,
+  getReservationsForRoom,
+  getWeekDays,
+  getWeekHeaderLabel,
+  groupRoomsByProperty,
+  safeParseDate,
+} from '../utils/reservationCalendar.js';
 
 const ReservationCalendar = ({
   reservations = [],
@@ -71,31 +75,13 @@ const ReservationCalendar = ({
   }, [currentMonth]);
 
   const rooms = useMemo(() => {
-    if (Array.isArray(providedRooms) && providedRooms.length > 0) {
-      return providedRooms;
-    }
-    const map = new Map();
-    reservations.forEach((reservation) => {
-      const roomId = reservation.room_id || reservation.room?.id;
-      if (!roomId) return;
-      if (!map.has(roomId)) {
-        map.set(roomId, {
-          id: roomId,
-          name: reservation.room?.name || t('reservationCard.room'),
-          propertyName: reservation.property?.name || t('reservationCard.property'),
-        });
-      }
-    });
-    return Array.from(map.values()).sort((a, b) => {
-      if (a.propertyName === b.propertyName) {
-        return a.name.localeCompare(b.name);
-      }
-      return a.propertyName.localeCompare(b.propertyName);
+    return buildRoomsFromReservations({
+      providedRooms,
+      reservations,
+      fallbackRoomName: t('reservationCard.room'),
+      fallbackPropertyName: t('reservationCard.property'),
     });
   }, [providedRooms, reservations, t]);
-
-  const getReservationsForRoom = (roomId) =>
-    reservations.filter((reservation) => (reservation.room_id || reservation.room?.id) === roomId);
 
   const navigateCalendar = (direction) => {
     const amount = direction === 'prev' ? -1 : 1;
@@ -290,7 +276,7 @@ const ReservationCalendar = ({
         ))}
 
         {rooms.map((room) => {
-          const reservationsForRoom = getReservationsForRoom(room.id);
+          const reservationsForRoom = getReservationsForRoom(reservations, room.id);
           return (
             <React.Fragment key={room.id}>
               <Box
@@ -333,19 +319,6 @@ const ReservationCalendar = ({
 };
 
 export default ReservationCalendar;
-
-const buildInitials = (name, lastname) => {
-  const parts = `${name ?? ''} ${lastname ?? ''}`
-    .trim()
-    .split(' ')
-    .filter(Boolean);
-  if (parts.length === 0) return '';
-  return parts
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('');
-};
 
 function CalendarViewToggle({ value, onChange, t }) {
   return (
@@ -399,72 +372,15 @@ function WeeklyCalendar({
   const today = startOfToday();
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
+    () => getWeekDays(weekStart),
     [weekStart],
   );
   const weekEnd = weekDays[6];
-  const weekHeaderLabel = useMemo(() => {
-    const startsAndEndsInSameMonth =
-      weekStart.getMonth() === weekEnd.getMonth() && weekStart.getFullYear() === weekEnd.getFullYear();
-    const startsAndEndsInSameYear = weekStart.getFullYear() === weekEnd.getFullYear();
-
-    if (startsAndEndsInSameMonth) {
-      return format(weekStart, 'LLLL yyyy', { locale: dateLocale });
-    }
-
-    if (startsAndEndsInSameYear) {
-      return `${format(weekStart, 'LLLL', { locale: dateLocale })} / ${format(weekEnd, 'LLLL yyyy', { locale: dateLocale })}`;
-    }
-
-    return `${format(weekStart, 'LLLL yyyy', { locale: dateLocale })} / ${format(weekEnd, 'LLLL yyyy', { locale: dateLocale })}`;
-  }, [dateLocale, weekEnd, weekStart]);
-  const groupedRooms = useMemo(() => {
-    const groups = [];
-    const groupMap = new Map();
-
-    rooms.forEach((room) => {
-      const groupName = room.propertyName || '';
-      if (!groupMap.has(groupName)) {
-        const group = { name: groupName, rooms: [] };
-        groupMap.set(groupName, group);
-        groups.push(group);
-      }
-      groupMap.get(groupName).rooms.push(room);
-    });
-
-    return groups;
-  }, [rooms]);
-
-  const getReservationsForRoom = (roomId) =>
-    reservations.filter((reservation) => (reservation.room_id || reservation.room?.id) === roomId);
-
-  const buildReservationBlocks = (roomReservations) =>
-    roomReservations
-      .map((reservation) => {
-        const start = safeParseDate(reservation.start_date);
-        const end = safeParseDate(reservation.end_date);
-        if (!start || !end) return null;
-
-        const inclusiveEnd = addDays(end, -1);
-        const effectiveEnd = inclusiveEnd >= start ? inclusiveEnd : start;
-        if (effectiveEnd < weekStart || start > weekEnd) return null;
-
-        const visibleStart = start < weekStart ? weekStart : start;
-        const visibleEnd = effectiveEnd > weekEnd ? weekEnd : effectiveEnd;
-        const startIndex = Math.max(0, differenceInCalendarDays(visibleStart, weekStart));
-        const endIndex = Math.min(6, differenceInCalendarDays(visibleEnd, weekStart));
-        const span = endIndex - startIndex + 1;
-        const statusMeta = getReservationStatusMeta(reservation.status);
-
-        return {
-          reservation,
-          startIndex,
-          span,
-          color: statusMeta.background,
-          textColor: statusMeta.color,
-        };
-      })
-      .filter(Boolean);
+  const weekHeaderLabel = useMemo(
+    () => getWeekHeaderLabel({ weekStart, weekEnd, dateLocale }),
+    [dateLocale, weekEnd, weekStart],
+  );
+  const groupedRooms = useMemo(() => groupRoomsByProperty(rooms), [rooms]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.6 }}>
@@ -587,8 +503,8 @@ function WeeklyCalendar({
               </Box>
             ) : null}
             {group.rooms.map((room) => {
-              const roomReservations = getReservationsForRoom(room.id);
-              const blocks = buildReservationBlocks(roomReservations);
+              const roomReservations = getReservationsForRoom(reservations, room.id);
+              const blocks = buildWeeklyReservationBlocks({ roomReservations, weekStart, weekEnd });
 
               return (
                 <React.Fragment key={room.id}>
@@ -696,28 +612,15 @@ function WeeklyCalendar({
 }
 
 const DayCell = ({ day, room, reservationsForRoom, onDayClick, onReservationSelect }) => {
-  const reservation = reservationsForRoom.find((item) => {
-    const start = safeParseDate(item.start_date);
-    const end = safeParseDate(item.end_date);
-    if (!start || !end) return false;
-    const endInclusive = addDays(end, -1);
-    const effectiveEnd = endInclusive >= start ? endInclusive : start;
-    return isWithinInterval(day, { start, end: effectiveEnd });
-  });
-
+  const reservation = findReservationForDay(reservationsForRoom, day);
   const hasReservation = Boolean(reservation);
   const isStart = hasReservation && isSameDay(day, safeParseDate(reservation.start_date));
   const today = startOfToday();
   const isPast = !hasReservation && onDayClick && isBefore(day, today);
   const startDate = hasReservation ? safeParseDate(reservation.start_date) : null;
   const endDate = hasReservation ? safeParseDate(reservation.end_date) : null;
-  const inclusiveEnd = startDate && endDate ? addDays(endDate, -1) : null;
-  const effectiveEnd = inclusiveEnd && startDate && inclusiveEnd >= startDate ? inclusiveEnd : startDate;
-
-  const reservationLength = (() => {
-    if (!hasReservation || !startDate || !effectiveEnd) return hasReservation ? 1 : 0;
-    return differenceInCalendarDays(effectiveEnd, startDate) + 1;
-  })();
+  const effectiveEnd = startDate && endDate ? getEffectiveReservationEnd(startDate, endDate) : startDate;
+  const reservationLength = getReservationLength({ startDate, effectiveEnd, hasReservation });
 
   const handleClick = () => {
     if (hasReservation) {
@@ -944,15 +847,7 @@ const MobileDayCell = ({
   dateLocale,
 }) => {
   const today = startOfToday();
-  const reservation = reservations.find((item) => {
-    const start = safeParseDate(item.start_date);
-    const end = safeParseDate(item.end_date);
-    if (!start || !end) return false;
-    const endInclusive = addDays(end, -1);
-    const effectiveEnd = endInclusive >= start ? endInclusive : start;
-    return isWithinInterval(day, { start, end: effectiveEnd });
-  });
-
+  const reservation = findReservationForDay(reservations, day);
   const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
   const isPast = isBefore(day, today);
   const hasReservation = Boolean(reservation);
