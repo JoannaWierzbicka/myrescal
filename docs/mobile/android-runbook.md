@@ -40,5 +40,6 @@ npm run android:open
 - The Android package id is `com.myrescal.app`.
 - The app display name is `MyResCal`.
 - The Android build must not rely on Vite's local `/api` proxy.
+- The Render backend `CORS_ORIGIN` must include `https://localhost` and `http://localhost`, because those are the Capacitor Android WebView origins used by current and older installed builds.
 - Local Android build outputs are ignored by git.
 - The first target is a debug APK for device testing, not Play Store release signing.

@@ -13,6 +13,7 @@ import {
   listRooms,
   updateRoom,
 } from '../repositories/roomRepository.js';
+import { deleteReservationsByRoom } from '../repositories/reservationRepository.js';
 import {
   createRoomNameUniqueError,
   ensurePropertyBelongsToOwner,
@@ -127,6 +128,16 @@ router.delete(
 
     if (!existingRoom) {
       throw createHttpError(404, 'Not found');
+    }
+
+    const { error: reservationsError } = await deleteReservationsByRoom({
+      supabase,
+      ownerId,
+      roomId: id,
+    });
+
+    if (reservationsError) {
+      throw mapSupabaseError(reservationsError);
     }
 
     const { error } = await deleteRoom({ supabase, ownerId, id });

@@ -13,6 +13,11 @@ import {
   listProperties,
   updateProperty,
 } from '../repositories/propertyRepository.js';
+import { listRoomsForProperty } from '../repositories/roomRepository.js';
+import {
+  deleteReservationsByProperty,
+  deleteReservationsByRooms,
+} from '../repositories/reservationRepository.js';
 
 const router = Router();
 
@@ -95,6 +100,37 @@ router.delete(
 
     if (!existingProperty) {
       throw createHttpError(404, 'Not found');
+    }
+
+    const { data: relatedRooms, error: relatedRoomsError } = await listRoomsForProperty({
+      supabase,
+      ownerId,
+      propertyId: id,
+    });
+
+    if (relatedRoomsError) {
+      throw mapSupabaseError(relatedRoomsError);
+    }
+
+    const { error: reservationsByPropertyError } = await deleteReservationsByProperty({
+      supabase,
+      ownerId,
+      propertyId: id,
+    });
+
+    if (reservationsByPropertyError) {
+      throw mapSupabaseError(reservationsByPropertyError);
+    }
+
+    const roomIds = (relatedRooms || []).map((room) => room.id).filter(Boolean);
+    const { error: reservationsByRoomsError } = await deleteReservationsByRooms({
+      supabase,
+      ownerId,
+      roomIds,
+    });
+
+    if (reservationsByRoomsError) {
+      throw mapSupabaseError(reservationsByRoomsError);
     }
 
     const { error } = await deleteProperty({ supabase, ownerId, id });

@@ -71,7 +71,7 @@ The current test suite covers core HTTP contracts, normalized error responses, `
 | `SUPABASE_ANON_KEY` | Yes | Supabase anon key used for user-scoped requests with RLS enforced. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Admin/service-role key used for administrative operations and auth validation. |
 | `SUPABASE_KEY` | No (legacy) | Fallback for `SUPABASE_SERVICE_ROLE_KEY`; deprecated. |
-| `CORS_ORIGIN` | Recommended | Comma-separated list of allowed origins. |
+| `CORS_ORIGIN` | Recommended | Comma-separated list of allowed origins. Include `https://localhost` and `http://localhost` when the Capacitor Android app uses this backend. |
 | `CLIENT_ORIGIN` | No (legacy) | Fallback for `CORS_ORIGIN`; deprecated. |
 | `AUTH_REQUIRE_EMAIL_CONFIRMATION` | Recommended | Email confirmation is required by default; set to `false` only locally if you need to bypass it. |
 | `AUTH_EMAIL_REDIRECT_URL` | Recommended | Redirect URL after clicking the email confirmation link. |

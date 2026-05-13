@@ -1,5 +1,6 @@
 import rateLimit from 'express-rate-limit';
 import { createHttpError } from '../utils/httpError.js';
+import { logger } from '../utils/logger.js';
 
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const DEFAULT_JSON_BODY_LIMIT = '100kb';
@@ -38,6 +39,10 @@ export function createCorsOptions(allowedOrigins) {
         return;
       }
 
+      logger.warn('config.cors.origin_rejected', {
+        origin,
+        allowedOrigins,
+      });
       callback(createHttpError(403, 'Not allowed by CORS.', null, 'CORS_ORIGIN_NOT_ALLOWED'));
     },
     credentials: false,

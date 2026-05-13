@@ -34,7 +34,7 @@ VITE_API_URL=https://your-production-api.example.com
 
 - Dev (with Vite proxy): usually no frontend env is required, default `/api` works with `vite.config.js` proxy.
 - Prod: set `VITE_API_URL` to the public backend URL (for example `https://api.example.com`).
-- Android/Capacitor: set `VITE_NATIVE_API_URL` to the absolute backend URL. Do not use `/api` for native builds, because it points to the local WebView, not to Vercel/Render.
+- Android/Capacitor: set `VITE_NATIVE_API_URL` to the absolute backend URL. Do not use `/api` for native builds, because it points to the local WebView, not to Vercel/Render. The backend `CORS_ORIGIN` must also include the Capacitor WebView origins, currently `https://localhost` and sometimes `http://localhost` in older installed builds.
 
 ## Available Scripts
 

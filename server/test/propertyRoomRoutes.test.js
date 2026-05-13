@@ -103,6 +103,12 @@ describe('property routes', () => {
 
     assert.equal(response.body.message, 'Property deleted successfully.');
     assert.equal(state.properties.some((property) => property.id === PROPERTY_ID), false);
+    assert.equal(state.rooms.some((room) => room.property_id === PROPERTY_ID), false);
+    assert.equal(state.reservations.some((reservation) => reservation.property_id === PROPERTY_ID), false);
+    assert.equal(
+      state.reservations.some((reservation) => [ROOM_ID, OTHER_ROOM_ID].includes(reservation.room_id)),
+      false,
+    );
   });
 });
 
@@ -200,5 +206,6 @@ describe('room routes', () => {
 
     assert.equal(response.body.message, 'Room deleted successfully.');
     assert.equal(state.rooms.some((room) => room.id === ROOM_ID), false);
+    assert.equal(state.reservations.some((reservation) => reservation.room_id === ROOM_ID), false);
   });
 });

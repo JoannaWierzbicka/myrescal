@@ -145,6 +145,11 @@ class FakeQueryBuilder {
     return this;
   }
 
+  in(field, values) {
+    this.filters.push({ operator: 'in', field, values });
+    return this;
+  }
+
   neq(field, value) {
     this.filters.push({ operator: 'neq', field, value });
     return this;
@@ -224,11 +229,23 @@ class FakeQueryBuilder {
     const rowsToDelete = new Set(this.filteredRawRows().map((row) => row.id));
 
     if (this.table === 'properties') {
+      const roomIdsToDelete = new Set(
+        this.state.rooms
+          .filter((row) => rowsToDelete.has(row.property_id))
+          .map((row) => row.id),
+      );
       this.state.properties = this.state.properties.filter((row) => !rowsToDelete.has(row.id));
+      this.state.rooms = this.state.rooms.filter((row) => !rowsToDelete.has(row.property_id));
+      this.state.reservations = this.state.reservations.filter(
+        (row) => !rowsToDelete.has(row.property_id) && !roomIdsToDelete.has(row.room_id),
+      );
     }
 
     if (this.table === 'rooms') {
       this.state.rooms = this.state.rooms.filter((row) => !rowsToDelete.has(row.id));
+      this.state.reservations = this.state.reservations.filter(
+        (row) => !rowsToDelete.has(row.room_id),
+      );
     }
 
     if (this.table === 'reservations') {
@@ -288,6 +305,9 @@ function matchesFilter(row, filter) {
   if (filter.operator === 'ilike') {
     const prefix = String(expected).replace(/%$/, '').toLowerCase();
     return String(value || '').toLowerCase().startsWith(prefix);
+  }
+  if (filter.operator === 'in') {
+    return Array.isArray(expected) && expected.includes(value);
   }
 
   return true;
