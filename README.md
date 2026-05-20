@@ -179,3 +179,29 @@ Sentry monitors backend, web, and mobile errors after DSNs are configured in env
 Runbook:
 
 - `docs/operational/monitoring-sentry.md`
+
+## Android Production Release
+
+The Android app currently runs through Capacitor. The debug-device flow is documented in:
+
+- `docs/mobile/android-runbook.md`
+- `docs/mobile/android-capacitor-spec.md`
+
+Production publishing requires signing, an Android App Bundle, Google Play metadata, privacy/Data safety declarations, and account deletion support. Release readiness checklist:
+
+- `docs/mobile/android-publishing-action-plan.md`
+- `docs/mobile/android-production-release.md`
+
+## Privacy And Compliance
+
+MyResCal stores account, owner profile, and reservation/guest contact data. Before public launch, publish a privacy policy, add an in-app privacy link, complete Google Play Data safety, and provide account/data deletion paths.
+
+Engineering checklist:
+
+- `docs/legal/privacy-compliance-readiness.md`
+
+## Planned Features
+
+Feature specifications:
+
+- `docs/features/reservation-confirmation-pdf-email.md`

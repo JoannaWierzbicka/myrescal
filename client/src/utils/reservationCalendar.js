@@ -5,7 +5,7 @@ import {
   isWithinInterval,
   parseISO,
 } from 'date-fns';
-import { getReservationStatusMeta } from './reservationStatus.js';
+import { getReservationDisplayStatusMeta } from './reservationStatus.js';
 
 export function safeParseDate(value) {
   if (!value) return null;
@@ -137,7 +137,7 @@ export function buildWeeklyReservationBlocks({ roomReservations, weekStart, week
       const startIndex = Math.max(0, differenceInCalendarDays(visibleStart, weekStart));
       const endIndex = Math.min(6, differenceInCalendarDays(visibleEnd, weekStart));
       const span = endIndex - startIndex + 1;
-      const statusMeta = getReservationStatusMeta(reservation.status);
+      const statusMeta = getReservationDisplayStatusMeta(reservation);
 
       return {
         reservation,

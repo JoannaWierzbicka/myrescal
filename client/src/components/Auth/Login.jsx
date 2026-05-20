@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Alert, Button, TextField, Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Alert, Button, Link as MuiLink, TextField, Typography } from '@mui/material';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { loginUser } from '../../api/auth.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLocale } from '../../context/LocaleContext.jsx';
@@ -87,6 +87,12 @@ function Login() {
           {isSubmitting ? t('auth.loginSubmitting') : t('auth.loginButton')}
         </Button>
       </form>
+      <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2 }}>
+        {t('auth.noAccountPrompt')}{' '}
+        <MuiLink component={RouterLink} to="/register" underline="hover" fontWeight={700}>
+          {t('auth.registerLink')}
+        </MuiLink>
+      </Typography>
     </AuthFormLayout>
   );
 }

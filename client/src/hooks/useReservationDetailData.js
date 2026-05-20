@@ -2,7 +2,11 @@ import { useCallback, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { deleteReservation } from '../api/reservations.js';
-import { getReservationStatusMeta } from '../utils/reservationStatus.js';
+import { getReservationDisplayStatusMeta } from '../utils/reservationStatus.js';
+import {
+  calculateReservationNights,
+  formatReservationNights,
+} from '../utils/reservationDates.js';
 
 export function useReservationDetailData({ reservation, t, language, dateLocale }) {
   const navigate = useNavigate();
@@ -11,7 +15,7 @@ export function useReservationDetailData({ reservation, t, language, dateLocale 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [error, setError] = useState(null);
 
-  const statusMeta = getReservationStatusMeta(reservation.status);
+  const statusMeta = getReservationDisplayStatusMeta(reservation);
   const normalizedStatus = reservation.status === 'booking' ? 'confirmed' : reservation.status;
   const normalizedConfirmationMethod =
     reservation.confirmation_method ?? (reservation.status === 'booking' ? 'booking_com' : null);
@@ -25,6 +29,8 @@ export function useReservationDetailData({ reservation, t, language, dateLocale 
   const propertyName = reservation.property?.name || '—';
   const roomName = reservation.room?.name || '—';
   const totalPrice = reservation.total_price ?? reservation.price;
+  const stayNights = calculateReservationNights(reservation.start_date, reservation.end_date);
+  const stayNightsLabel = formatReservationNights(stayNights, language);
 
   const backPath = useMemo(() => {
     const from = location.state?.from;
@@ -77,6 +83,7 @@ export function useReservationDetailData({ reservation, t, language, dateLocale 
     propertyName,
     roomName,
     totalPrice,
+    stayNightsLabel,
     formatDate,
     formatMoney,
     isDeleting,
