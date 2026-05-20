@@ -5,7 +5,7 @@ import { loginUser } from '../../api/auth.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLocale } from '../../context/LocaleContext.jsx';
 import AuthFormLayout from './AuthFormLayout.jsx';
-import { isApiErrorCode } from '../../api/errorUtils.js';
+import { getApiErrorCode, isApiErrorCode } from '../../api/errorUtils.js';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -29,6 +29,11 @@ function Login() {
       });
       navigate('/dashboard');
     } catch (err) {
+      console.warn('Login failed', {
+        status: err?.status ?? null,
+        code: getApiErrorCode(err),
+        requestId: err?.requestId ?? null,
+      });
       if (isApiErrorCode(err, 'AUTH_INVALID_CREDENTIALS')) {
         setError(t('auth.loginError'));
       } else if (isApiErrorCode(err, 'AUTH_EMAIL_NOT_CONFIRMED')) {
@@ -50,6 +55,9 @@ function Login() {
           label={t('auth.email')}
           type="email"
           autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           required
           fullWidth
           margin="normal"
@@ -62,6 +70,9 @@ function Login() {
           required
           type="password"
           autoComplete="current-password"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           margin="normal"
           value={password}
           onChange={e => setPassword(e.target.value)}

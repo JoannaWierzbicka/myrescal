@@ -89,6 +89,9 @@ function Register() {
           margin="normal"
           type="email"
           autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
         />
@@ -98,6 +101,9 @@ function Register() {
           required
           type="password"
           autoComplete="new-password"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           margin="normal"
           value={password}
           onChange={(event) => {
@@ -113,6 +119,9 @@ function Register() {
           required
           type="password"
           autoComplete="new-password"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           margin="normal"
           value={confirmPassword}
           onChange={(event) => {

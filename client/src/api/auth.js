@@ -2,26 +2,32 @@ import { apiClient } from './client.js';
 
 const AUTH_ROOT = '/auth';
 
+const normalizeEmail = (email) => (typeof email === 'string' ? email.trim() : '');
+
 export async function loginUser({ email, password, signal } = {}) {
-  if (!email || !password) {
+  const normalizedEmail = normalizeEmail(email);
+
+  if (!normalizedEmail || !password) {
     throw new Error('Email and password are required');
   }
 
   return apiClient(`${AUTH_ROOT}/login`, {
     method: 'POST',
-    data: { email, password },
+    data: { email: normalizedEmail, password },
     signal,
   });
 }
 
 export async function registerUser({ email, password, firstName, lastName, phone, companyName, signal } = {}) {
-  if (!email || !password || !firstName || !lastName) {
+  const normalizedEmail = normalizeEmail(email);
+
+  if (!normalizedEmail || !password || !firstName || !lastName) {
     throw new Error('Email, password, first name and last name are required');
   }
 
   return apiClient(`${AUTH_ROOT}/register`, {
     method: 'POST',
-    data: { email, password, firstName, lastName, phone, companyName },
+    data: { email: normalizedEmail, password, firstName, lastName, phone, companyName },
     signal,
   });
 }
