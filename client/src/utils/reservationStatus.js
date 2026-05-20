@@ -37,6 +37,10 @@ export const RESERVATION_STATUS_OPTIONS = Object.entries(RESERVATION_STATUS_META
     ...meta,
   }));
 
+export const DEFAULT_RESERVATION_LIST_STATUS_FILTERS = RESERVATION_STATUS_OPTIONS.map(
+  (option) => option.value,
+);
+
 export const getReservationStatusMeta = (status) =>
   RESERVATION_STATUS_META[status === 'booking' ? 'confirmed' : status] ??
   RESERVATION_STATUS_META.preliminary;
@@ -59,6 +63,25 @@ export const getReservationDisplayStatus = (reservation, todayDateValue = format
 
 export const getReservationDisplayStatusMeta = (reservation, todayDateValue) =>
   getReservationStatusMeta(getReservationDisplayStatus(reservation, todayDateValue));
+
+export const getReservationFilterStatus = (reservation) => {
+  if (reservation?.deposit_paid === true) return 'deposit_paid';
+
+  const rawStatus = reservation?.status === 'booking' ? 'confirmed' : reservation?.status;
+  if (rawStatus && Object.prototype.hasOwnProperty.call(RESERVATION_STATUS_META, rawStatus)) {
+    return rawStatus;
+  }
+
+  return DEFAULT_RESERVATION_STATUS;
+};
+
+export const isReservationPastForList = (reservation, todayDateValue = formatDateValue()) => {
+  const rawStatus = reservation?.status === 'booking' ? 'confirmed' : reservation?.status;
+  if (rawStatus === 'past') return true;
+
+  const endDate = reservation?.end_date;
+  return Boolean(endDate && todayDateValue && todayDateValue >= endDate);
+};
 
 export const DEFAULT_CONFIRMATION_METHOD = 'paid_full';
 
