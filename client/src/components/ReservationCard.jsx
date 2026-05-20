@@ -14,15 +14,11 @@ import {
 } from '@mui/material';
 import { format } from 'date-fns';
 import { useLocale } from '../context/LocaleContext.jsx';
-import { getReservationStatusMeta } from '../utils/reservationStatus.js';
+import { getReservationDisplayStatusMeta } from '../utils/reservationStatus.js';
 
 function ReservationCard({ reservation, onEdit, onDelete, onView, disabled = false }) {
   const { t, dateLocale } = useLocale();
-  const isDepositPaid = reservation.deposit_paid === true || reservation.status === 'deposit_paid';
-  const effectiveStatus = isDepositPaid
-    ? 'deposit_paid'
-    : (typeof reservation.status === 'string' && reservation.status.trim()) || 'preliminary';
-  const statusMeta = getReservationStatusMeta(effectiveStatus);
+  const statusMeta = getReservationDisplayStatusMeta(reservation);
   const statusLabel = t(statusMeta.labelKey);
 
   const formatDate = useCallback(

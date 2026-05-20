@@ -30,9 +30,12 @@ import {
   DEFAULT_RESERVATION_STATUS,
   RESERVATION_CONFIRMATION_METHOD_OPTIONS,
   RESERVATION_STATUS_OPTIONS,
-  RESERVATION_STATUS_META,
   normalizeConfirmationMethod,
 } from '../utils/reservationStatus.js';
+import {
+  calculateReservationNights,
+  formatReservationNights,
+} from '../utils/reservationDates.js';
 
 const DEFAULT_FORM_VALUES = {
   name: '',
@@ -152,17 +155,7 @@ const ensureEndDateAfterStart = (values) => {
 };
 
 const calculateNumberOfNights = (startDate, endDate) => {
-  const startUtc = parseDateToUtcDay(startDate);
-  const endUtc = parseDateToUtcDay(endDate);
-
-  if (startUtc === null || endUtc === null) return null;
-
-  const differenceMs = endUtc - startUtc;
-  const nights = differenceMs / (1000 * 60 * 60 * 24);
-
-  if (!Number.isFinite(nights) || nights <= 0) return null;
-
-  return nights;
+  return calculateReservationNights(startDate, endDate);
 };
 
 const computeAutomaticTotalPrice = (values) => {
@@ -283,7 +276,8 @@ const deriveNightlyRateFromStoredTotal = (values = {}) => {
 const normalizeReservationStatus = (status) => {
   const normalized = String(status || '').trim();
   if (normalized === 'booking') return 'confirmed';
-  if (!normalized || !Object.prototype.hasOwnProperty.call(RESERVATION_STATUS_META, normalized)) {
+  const isSelectableStatus = RESERVATION_STATUS_OPTIONS.some((option) => option.value === normalized);
+  if (!normalized || !isSelectableStatus) {
     return DEFAULT_RESERVATION_STATUS;
   }
   return normalized;
@@ -500,6 +494,16 @@ function ReservationFormDialog({
         nightly_rate: formValues.nightly_rate,
       }),
     [formValues.end_date, formValues.nightly_rate, formValues.start_date],
+  );
+
+  const stayNights = useMemo(
+    () => calculateNumberOfNights(formValues.start_date, formValues.end_date),
+    [formValues.end_date, formValues.start_date],
+  );
+
+  const stayNightsLabel = useMemo(
+    () => formatReservationNights(stayNights, language),
+    [language, stayNights],
   );
 
   const remainingAmount = useMemo(
@@ -931,6 +935,15 @@ function ReservationFormDialog({
                 />
               </Box>
             </Stack>
+            {stayNightsLabel ? (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 1.5, fontWeight: 700 }}
+              >
+                {t('reservationForm.stayLength')}: {stayNightsLabel}
+              </Typography>
+            ) : null}
 
             <Stack spacing={2.5} direction={{ xs: 'column', sm: 'row' }} sx={{ mt: STAY_DETAILS_ROW_MARGIN }}>
               <FormControl required fullWidth disabled={loadingProperties || (properties?.length ?? 0) === 0}>

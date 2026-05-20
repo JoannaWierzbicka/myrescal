@@ -28,7 +28,7 @@ import {
   startOfWeek,
 } from 'date-fns';
 import { useLocale } from '../context/LocaleContext.jsx';
-import { getReservationStatusMeta } from '../utils/reservationStatus.js';
+import { getReservationDisplayStatusMeta } from '../utils/reservationStatus.js';
 import {
   buildInitials,
   buildRoomsFromReservations,
@@ -634,7 +634,7 @@ const DayCell = ({ day, room, reservationsForRoom, onDayClick, onReservationSele
   const initials = buildInitials(reservation?.name, reservation?.lastname);
   const spanColumns = Math.max(reservationLength, 1);
   const displayName = initials || fullName || reservation?.name || '';
-  const statusMeta = reservation ? getReservationStatusMeta(reservation.status) : null;
+  const statusMeta = reservation ? getReservationDisplayStatusMeta(reservation) : null;
   const blockColor = statusMeta?.background || '#235369';
   const blockTextColor = statusMeta?.color || '#FFFFFF';
 
@@ -854,7 +854,7 @@ const MobileDayCell = ({
   const label = format(day, 'd', { locale: dateLocale });
   const startDate = hasReservation ? safeParseDate(reservation.start_date) : null;
   const isStart = hasReservation && startDate && isSameDay(day, startDate);
-  const statusMeta = reservation ? getReservationStatusMeta(reservation.status) : null;
+  const statusMeta = reservation ? getReservationDisplayStatusMeta(reservation) : null;
   const blockColor = statusMeta?.background || '#235369';
   const blockTextColor = statusMeta?.color || '#102A33';
 

@@ -49,6 +49,7 @@ function ReservationDetail() {
     propertyName,
     roomName,
     totalPrice,
+    stayNightsLabel,
     formatDate,
     formatMoney,
     isDeleting,
@@ -231,6 +232,13 @@ function ReservationDetail() {
               <DatePanel label={t('reservationDetail.checkOut')} value={formatDate(reservation.end_date)} />
             </Box>
             <InfoGrid sx={{ mt: 2 }}>
+              {stayNightsLabel ? (
+                <DetailItem
+                  label={t('reservationDetail.stayLength')}
+                  value={stayNightsLabel}
+                  icon={<CalendarMonthOutlinedIcon />}
+                />
+              ) : null}
               <DetailItem label={t('reservationDetail.property')} value={propertyName} icon={<HotelOutlinedIcon />} />
               <DetailItem label={t('reservationDetail.room')} value={roomName} icon={<HotelOutlinedIcon />} />
             </InfoGrid>
