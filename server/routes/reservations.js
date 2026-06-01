@@ -31,6 +31,7 @@ import {
   ensureReservationOwnership,
   ensureRoomAvailability,
 } from '../services/reservationService.js';
+import { buildGuestMessagePreview } from '../services/reservationGuestMessageService.js';
 
 const router = Router();
 
@@ -59,6 +60,36 @@ router.get(
     const normalized = withComputedReservationStatus(data);
 
     res.json(normalized);
+  }),
+);
+
+router.get(
+  '/:id/messages/preview',
+  asyncHandler(async (req, res) => {
+    const id = validateReservationIdParam(req.params);
+    const ownerId = req.user.id;
+    const supabase = getSupabaseUser(req.accessToken);
+
+    const { data, error } = await findReservationById({ supabase, ownerId, id });
+
+    if (error) {
+      throw mapSupabaseError(error, error.status === 406 ? 404 : error.status);
+    }
+
+    if (!data) {
+      throw createHttpError(404, `Reservation with ID ${id} not found.`);
+    }
+
+    const [reservation] = withComputedReservationStatus([data]);
+    const preview = buildGuestMessagePreview(reservation, {
+      type: req.query.type,
+      language: req.query.language,
+      includeRules: req.query.include_rules,
+      includeCancellation: req.query.include_cancellation,
+      includeSummary: req.query.include_summary,
+    });
+
+    res.json(preview);
   }),
 );
 

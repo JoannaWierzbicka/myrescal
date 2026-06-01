@@ -40,3 +40,10 @@ export async function deleteProperty({ supabase, ownerId, id }) {
     .eq('id', id)
     .eq('owner_id', ownerId);
 }
+
+export async function deletePropertiesByOwner({ supabase, ownerId }) {
+  return supabase
+    .from('properties')
+    .delete()
+    .eq('owner_id', ownerId);
+}

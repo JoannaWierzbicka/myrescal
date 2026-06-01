@@ -10,7 +10,20 @@ export const AUTH_HEADER = 'Bearer test-access-token';
 export const createMockState = (overrides = {}) => ({
   nextPropertyIndex: 7,
   nextRoomIndex: 8,
+  nextOwnerProfileIndex: 9,
   nextReservationId: 20,
+  deletedAuthUserIds: [],
+  owner_profiles: [
+    {
+      id: '99999999-9999-4999-8999-999999999999',
+      owner_id: OWNER_ID,
+      first_name: 'Joanna',
+      last_name: 'Wierzbicka',
+      phone: '+48500600700',
+      company_name: 'MyResCal',
+      address: null,
+    },
+  ],
   properties: [
     {
       id: PROPERTY_ID,
@@ -76,6 +89,7 @@ export const createMockState = (overrides = {}) => ({
 
 export const installSupabaseMocks = (state = createMockState()) => {
   const admin = {
+    ...createFakeSupabaseClient(state),
     auth: {
       getUser: async (token) => ({
         data: {
@@ -89,6 +103,12 @@ export const installSupabaseMocks = (state = createMockState()) => {
         },
         error: token ? null : { message: 'Missing token' },
       }),
+      admin: {
+        deleteUser: async (ownerId) => {
+          state.deletedAuthUserIds.push(ownerId);
+          return { data: { user: null }, error: null };
+        },
+      },
     },
   };
 
@@ -131,6 +151,12 @@ class FakeQueryBuilder {
 
   update(payload) {
     this.operation = 'update';
+    this.payload = payload;
+    return this;
+  }
+
+  upsert(payload) {
+    this.operation = 'upsert';
     this.payload = payload;
     return this;
   }
@@ -192,6 +218,10 @@ class FakeQueryBuilder {
       return this.updateRow();
     }
 
+    if (this.operation === 'upsert') {
+      return this.upsertRow();
+    }
+
     if (this.operation === 'delete') {
       return this.deleteRows();
     }
@@ -212,6 +242,29 @@ class FakeQueryBuilder {
 
     return { data: this.attachRelations(row), error: null };
   }
+
+  upsertRow() {
+    const rows = this.tableRows();
+    const existingIndex = rows.findIndex(
+      (row) => row.owner_id && row.owner_id === this.payload.owner_id,
+    );
+
+    if (existingIndex >= 0) {
+      rows[existingIndex] = {
+        ...rows[existingIndex],
+        ...this.payload,
+      };
+      return { data: this.attachRelations(rows[existingIndex]), error: null };
+    }
+
+    const row = {
+      id: nextIdForTable(this.state, this.table),
+      ...this.payload,
+    };
+    rows.push(row);
+    return { data: this.attachRelations(row), error: null };
+  }
+
 
   updateRow() {
     const row = this.filteredRawRows()[0];
@@ -252,6 +305,12 @@ class FakeQueryBuilder {
       this.state.reservations = this.state.reservations.filter((row) => !rowsToDelete.has(row.id));
     }
 
+    if (this.table === 'owner_profiles') {
+      this.state.owner_profiles = this.state.owner_profiles.filter(
+        (row) => !rowsToDelete.has(row.id),
+      );
+    }
+
     return { data: null, error: null };
   }
 
@@ -269,6 +328,7 @@ class FakeQueryBuilder {
     if (this.table === 'properties') return this.state.properties;
     if (this.table === 'rooms') return this.state.rooms;
     if (this.table === 'reservations') return this.state.reservations;
+    if (this.table === 'owner_profiles') return this.state.owner_profiles;
     return [];
   }
 
@@ -288,6 +348,10 @@ function nextIdForTable(state, table) {
 
   if (table === 'rooms') {
     return `${state.nextRoomIndex++}`.padStart(8, '8') + '-8888-4888-8888-888888888888';
+  }
+
+  if (table === 'owner_profiles') {
+    return `${state.nextOwnerProfileIndex++}`.padStart(8, '9') + '-9999-4999-8999-999999999999';
   }
 
   return String(state.nextReservationId++);
@@ -320,6 +384,6 @@ function attachReservationRelations(state, reservation) {
   return {
     ...reservation,
     room: room ? { id: room.id, name: room.name, property_id: room.property_id } : null,
-    property: property ? { id: property.id, name: property.name } : null,
+    property: property ? { ...property } : null,
   };
 }

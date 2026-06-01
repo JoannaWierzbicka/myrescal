@@ -47,6 +47,13 @@ export async function deleteRoom({ supabase, ownerId, id }) {
     .eq('owner_id', ownerId);
 }
 
+export async function deleteRoomsByOwner({ supabase, ownerId }) {
+  return supabase
+    .from('rooms')
+    .delete()
+    .eq('owner_id', ownerId);
+}
+
 export async function findPropertyOwnerRecord({ supabase, ownerId, propertyId }) {
   return supabase
     .from('properties')

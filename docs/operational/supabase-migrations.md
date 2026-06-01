@@ -31,6 +31,10 @@ Run files in this order:
 7. `007_confirmed_reservations.sql`
 8. `008_verify_post_deploy.sql`
 9. `009_reservation_delete_cascade.sql`
+10. `010_owner_property_confirmation_settings.sql`
+11. `011_property_payment_and_message_settings.sql`
+12. `012_cleanup_property_payment_settings.sql`
+13. `013_property_guest_messages_toggle.sql`
 
 ## What To Check
 
@@ -53,6 +57,18 @@ After `009_reservation_delete_cascade.sql`, verify its final result shows `casca
 
 - `reservations_property_fk`,
 - `reservations_room_fk`.
+
+After `010_owner_property_confirmation_settings.sql`, verify that `owner_profiles` has
+`address`, and `properties` has the confirmation settings columns.
+
+After `011_property_payment_and_message_settings.sql`, verify that `properties` has
+payment/deposit columns and guest-message enabled flags.
+
+After `012_cleanup_property_payment_settings.sql`, verify that obsolete columns
+`payment_transfer_title_template` and `deposit_unpaid_note` are not present on `properties`.
+
+After `013_property_guest_messages_toggle.sql`, verify that `properties` has
+`guest_messages_enabled` with default `true`.
 
 ## If The Overlap Migration Stops
 

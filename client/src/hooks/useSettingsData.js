@@ -90,6 +90,7 @@ export function useSettingsData(t) {
     setSelectedPropertyId(updated.id);
     setPropertiesError(null);
     notifyReservationSetupChanged();
+    return updated;
   };
 
   const deletePropertyById = async (id) => {

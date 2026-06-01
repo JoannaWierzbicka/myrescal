@@ -13,6 +13,9 @@ Run files in Supabase SQL Editor in numeric order:
 7. `007_confirmed_reservations.sql`
 8. `008_verify_post_deploy.sql`
 9. `009_reservation_delete_cascade.sql`
+10. `010_owner_property_confirmation_settings.sql`
+11. `011_property_payment_and_message_settings.sql`
+12. `012_cleanup_property_payment_settings.sql`
 
 Rules:
 

@@ -6,8 +6,7 @@ const RESERVATION_WITH_RELATIONS_SELECT = `
     property_id
   ),
   property:properties (
-    id,
-    name
+    *
   )
 `;
 
@@ -78,6 +77,13 @@ export async function deleteReservation({ supabase, ownerId, id }) {
     .from('reservations')
     .delete()
     .eq('id', id)
+    .eq('owner_id', ownerId);
+}
+
+export async function deleteReservationsByOwner({ supabase, ownerId }) {
+  return supabase
+    .from('reservations')
+    .delete()
     .eq('owner_id', ownerId);
 }
 

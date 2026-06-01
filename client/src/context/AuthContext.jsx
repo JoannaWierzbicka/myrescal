@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { fetchCurrentUser, logoutUser } from '../api/auth.js';
+import { deleteAccount, fetchCurrentUser, logoutUser } from '../api/auth.js';
 import { AUTH_EVENTS } from '../api/client.js';
 import { authStorage } from './authStorage.js';
 import { configureMonitoringUser } from '../utils/monitoring.js';
@@ -110,6 +110,15 @@ export function AuthProvider({ children }) {
     setAuthChecked(true);
   }, []);
 
+  const updateProfile = useCallback((nextProfile) => {
+    const normalizedProfile = nextProfile ?? null;
+    authStorage.setProfile(normalizedProfile);
+    setAuthState((current) => ({
+      ...current,
+      profile: normalizedProfile,
+    }));
+  }, []);
+
   const logout = useCallback(async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
@@ -128,18 +137,27 @@ export function AuthProvider({ children }) {
     }
   }, [isLoggingOut, session]);
 
+  const removeAccount = useCallback(async ({ confirmation } = {}) => {
+    await deleteAccount({ confirmation });
+    authStorage.clear();
+    setAuthState(initialState);
+    setAuthChecked(true);
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
       session,
       profile,
       login,
+      updateProfile,
       logout,
+      removeAccount,
       isLoggingOut,
       authChecked,
       isAuthenticated: Boolean(user),
     }),
-    [user, session, profile, isLoggingOut, login, logout, authChecked],
+    [user, session, profile, isLoggingOut, login, updateProfile, logout, removeAccount, authChecked],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

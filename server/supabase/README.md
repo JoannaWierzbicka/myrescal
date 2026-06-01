@@ -66,6 +66,20 @@ docs/operational/supabase-migrations.md
   - does not change anything;
   - verifies RLS, constraints, and reservation conflicts after migration.
 
+- `009_reservation_delete_cascade.sql`
+  - ensures deleting a property or room deletes connected reservations.
+
+- `010_owner_property_confirmation_settings.sql`
+  - adds account address to owner profiles;
+  - adds property confirmation settings for contact details, stay conditions, cancellation rules, and property rules text.
+
+- `011_property_payment_and_message_settings.sql`
+  - adds property payment/deposit settings;
+  - adds flags for available guest-message types.
+
+- `012_cleanup_property_payment_settings.sql`
+  - removes obsolete manual transfer-title and unpaid-deposit note columns if an earlier `011` draft was already run.
+
 ---
 
 ### Rule

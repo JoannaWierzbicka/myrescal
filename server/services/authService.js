@@ -1,6 +1,13 @@
 import { getSupabaseAdmin } from '../auth/supabaseClient.js';
 import { mapAuthProviderError } from '../auth/authErrors.js';
-import { upsertOwnerProfile } from '../repositories/ownerProfileRepository.js';
+import {
+  deleteOwnerProfile,
+  findOwnerProfile,
+  upsertOwnerProfile,
+} from '../repositories/ownerProfileRepository.js';
+import { deletePropertiesByOwner } from '../repositories/propertyRepository.js';
+import { deleteRoomsByOwner } from '../repositories/roomRepository.js';
+import { deleteReservationsByOwner } from '../repositories/reservationRepository.js';
 import { mapSupabaseError } from '../utils/mapSupabaseError.js';
 import { validateOwnerProfilePayload } from '../validators/profileValidator.js';
 
@@ -47,6 +54,20 @@ export async function maybeCreateOwnerProfileFromUserMetadata(user) {
     return null;
   }
 
+  const supabaseAdmin = getSupabaseAdmin();
+  const { data: existingProfile, error: existingProfileError } = await findOwnerProfile({
+    supabase: supabaseAdmin,
+    ownerId: user.id,
+  });
+
+  if (existingProfileError) {
+    throw mapSupabaseError(existingProfileError);
+  }
+
+  if (existingProfile) {
+    return existingProfile;
+  }
+
   const profile = validateOwnerProfilePayload({
     firstName,
     lastName,
@@ -54,7 +75,6 @@ export async function maybeCreateOwnerProfileFromUserMetadata(user) {
     companyName: metadata.company_name ?? null,
   });
 
-  const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await upsertOwnerProfile({
     supabase: supabaseAdmin,
     ownerId: user.id,
@@ -66,6 +86,36 @@ export async function maybeCreateOwnerProfileFromUserMetadata(user) {
   }
 
   return data ?? null;
+}
+
+export async function deleteAccountForOwner(ownerId) {
+  if (!ownerId) {
+    throw new Error('ownerId is required');
+  }
+
+  const supabaseAdmin = getSupabaseAdmin();
+
+  const deleteSteps = [
+    () => deleteReservationsByOwner({ supabase: supabaseAdmin, ownerId }),
+    () => deleteRoomsByOwner({ supabase: supabaseAdmin, ownerId }),
+    () => deletePropertiesByOwner({ supabase: supabaseAdmin, ownerId }),
+    () => deleteOwnerProfile({ supabase: supabaseAdmin, ownerId }),
+  ];
+
+  for (const deleteStep of deleteSteps) {
+    const { error } = await deleteStep();
+    if (error) {
+      throw mapSupabaseError(error);
+    }
+  }
+
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(ownerId);
+  if (error) {
+    throw mapAuthProviderError(error, {
+      fallbackStatus: 500,
+      fallbackMessage: 'Unable to delete account.',
+    });
+  }
 }
 
 function normalizeEmail(email) {
