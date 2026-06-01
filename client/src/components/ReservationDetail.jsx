@@ -26,6 +26,7 @@ import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined
 import StickyNote2OutlinedIcon from '@mui/icons-material/StickyNote2Outlined';
 import { useLocale } from '../context/LocaleContext.jsx';
 import { useReservationDetailData } from '../hooks/useReservationDetailData.js';
+import ReservationGuestMessages from './ReservationGuestMessages.jsx';
 import {
   BreakableEmail,
   DatePanel,
@@ -284,6 +285,8 @@ function ReservationDetail() {
               {reservation.notes || '—'}
             </Typography>
           </SectionCard>
+
+          <ReservationGuestMessages reservation={reservation} />
         </Box>
 
         <Stack direction="row" spacing={1.25} sx={{ display: { xs: 'none', sm: 'flex' } }}>

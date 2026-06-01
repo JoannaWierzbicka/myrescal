@@ -8,12 +8,14 @@ describe('validateOwnerProfilePayload', () => {
       firstName: ' Joanna ',
       lastName: ' Wierzbicka ',
       phone: '+48 500 600 700',
+      address: ' Rynek 1 ',
       companyName: ' MyResCal ',
     });
 
     assert.equal(result.first_name, 'Joanna');
     assert.equal(result.last_name, 'Wierzbicka');
     assert.equal(result.phone, '+48500600700');
+    assert.equal(result.address, 'Rynek 1');
     assert.equal(result.company_name, 'MyResCal');
   });
 
@@ -34,4 +36,5 @@ describe('validateOwnerProfilePayload', () => {
       /Invalid phone number/,
     );
   });
+
 });

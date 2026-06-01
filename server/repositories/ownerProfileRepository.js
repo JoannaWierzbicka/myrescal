@@ -20,3 +20,10 @@ export async function upsertOwnerProfile({ supabase, ownerId, payload }) {
     .select('*')
     .maybeSingle();
 }
+
+export async function deleteOwnerProfile({ supabase, ownerId }) {
+  return supabase
+    .from('owner_profiles')
+    .delete()
+    .eq('owner_id', ownerId);
+}

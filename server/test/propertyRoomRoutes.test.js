@@ -75,11 +75,40 @@ describe('property routes', () => {
     const response = await request(app)
       .put(`/api/properties/${PROPERTY_ID}`)
       .set('Authorization', AUTH_HEADER)
-      .send({ name: 'Nowa nazwa', description: '' })
+      .send({
+        name: 'Nowa nazwa',
+        description: '',
+        contactEmail: 'kontakt@example.com',
+        contactPhone: '+48 500 600 700',
+        checkInTime: '15:00',
+        checkOutTime: '11:00',
+        cancellationFreeUntilDays: 7,
+        depositRefundPolicy: 'non_refundable',
+        termsText: 'Regulamin testowy',
+        paymentRecipient: 'Apartamenty Centrum',
+        paymentAccount: 'PL00 0000 0000 0000 0000 0000 0000',
+        depositType: 'amount',
+        depositValue: 300,
+        depositDueDays: 2,
+        messageDepositConfirmationEnabled: false,
+      })
       .expect(200);
 
     assert.equal(response.body.name, 'Nowa nazwa');
     assert.equal(response.body.description, null);
+    assert.equal(response.body.contact_email, 'kontakt@example.com');
+    assert.equal(response.body.contact_phone, '+48500600700');
+    assert.equal(response.body.check_in_time, '15:00');
+    assert.equal(response.body.check_out_time, '11:00');
+    assert.equal(response.body.cancellation_free_until_days, 7);
+    assert.equal(response.body.deposit_refund_policy, 'non_refundable');
+    assert.equal(response.body.terms_text, 'Regulamin testowy');
+    assert.equal(response.body.payment_recipient, 'Apartamenty Centrum');
+    assert.equal(response.body.payment_account, 'PL00 0000 0000 0000 0000 0000 0000');
+    assert.equal(response.body.deposit_type, 'amount');
+    assert.equal(response.body.deposit_value, 300);
+    assert.equal(response.body.deposit_due_days, 2);
+    assert.equal(response.body.message_deposit_confirmation_enabled, false);
     assert.equal(state.properties.find((property) => property.id === PROPERTY_ID).name, 'Nowa nazwa');
   });
 

@@ -8,6 +8,7 @@ import { validateOwnerProfilePayload } from '../validators/profileValidator.js';
 import { findOwnerProfile } from '../repositories/ownerProfileRepository.js';
 import { createEmailExistsError, mapAuthProviderError } from './authErrors.js';
 import {
+  deleteAccountForOwner,
   findAuthUserByEmail,
   maybeCreateOwnerProfileFromUserMetadata,
 } from '../services/authService.js';
@@ -116,6 +117,27 @@ router.post(
     }
 
     res.json({ message: 'Logged out' });
+  }),
+);
+
+router.delete(
+  '/account',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { confirmation } = req.body || {};
+
+    if (confirmation !== 'DELETE ACCOUNT') {
+      throw createHttpError(
+        400,
+        'Account deletion confirmation is required.',
+        { field: 'confirmation' },
+        'VALIDATION_ERROR',
+      );
+    }
+
+    await deleteAccountForOwner(req.user.id);
+
+    res.json({ message: 'Account deleted successfully.' });
   }),
 );
 

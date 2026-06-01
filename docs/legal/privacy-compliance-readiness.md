@@ -54,7 +54,7 @@ These are not theoretical; they affect store approval and production readiness:
 
 1. No privacy policy file or public privacy policy URL is present in the repo.
 2. No in-app privacy policy link was found.
-3. No account deletion or deletion request flow was found.
+3. In-app account deletion exists in Settings, but no public external deletion request page/URL is documented.
 4. No documented retention schedule exists for account, reservation, log, backup, and Sentry data.
 5. No documented Data Processing Agreement inventory exists for Supabase, Render, Vercel, Sentry, and SMTP.
 6. No cookie/analytics consent path is documented. This may be fine if no non-essential analytics/cookies are added, but it must remain true.
@@ -95,20 +95,18 @@ The final decision depends on the business model and should be reviewed legally.
 
 Google Play requires an in-app path and an external web resource if the app allows account creation. GDPR also gives users deletion rights in defined circumstances.
 
-Recommended implementation:
+Implemented in-app flow:
 
-1. Add a Settings entry: `Delete account` or `Request account deletion`.
-2. Add a backend endpoint or support workflow that verifies the authenticated user.
-3. Delete or anonymize:
-   - Supabase auth user;
-   - owner profile;
-   - properties;
-   - rooms;
-   - reservations;
-   - guest contact fields;
-   - related operational data where feasible.
-4. Document what remains in backups/logs and for how long.
-5. Publish a public deletion request page and enter its URL in Play Console.
+- Settings includes `Delete account`;
+- the backend verifies the authenticated user;
+- the user must type `DELETE ACCOUNT`;
+- the backend deletes the Supabase auth user, owner profile, properties, rooms, and reservations.
+
+Remaining production tasks:
+
+1. Document what remains in backups/logs and for how long.
+2. Publish a public deletion request page and enter its URL in Play Console.
+3. Include the deletion process in the public privacy policy.
 
 ## Third-Party Processor Register
 

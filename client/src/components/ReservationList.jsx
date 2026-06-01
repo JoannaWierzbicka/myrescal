@@ -7,12 +7,14 @@ import {
   Card,
   CardActions,
   CardContent,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
   InputLabel,
+  ListItemText,
   MenuItem,
   Select,
   Snackbar,
@@ -21,6 +23,12 @@ import {
 import LocalPostOfficeIcon from '@mui/icons-material/LocalPostOffice';
 import ReservationCard from './ReservationCard.jsx';
 import { useLocale } from '../context/LocaleContext.jsx';
+import {
+  DEFAULT_RESERVATION_LIST_STATUS_FILTERS,
+  RESERVATION_STATUS_OPTIONS,
+  getReservationFilterStatus,
+  isReservationPastForList,
+} from '../utils/reservationStatus.js';
 
 const SORT_OPTIONS = [
   { value: 'date', labelKey: 'reservationList.sortOptions.date' },
@@ -49,6 +57,9 @@ function ReservationList({
   const navigate = useNavigate();
   const { t, language } = useLocale();
   const [sortBy, setSortBy] = useState('date');
+  const [statusFilters, setStatusFilters] = useState(() => [
+    ...DEFAULT_RESERVATION_LIST_STATUS_FILTERS,
+  ]);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [toast, setToast] = useState(null);
   const [confirmReservation, setConfirmReservation] = useState(null);
@@ -70,14 +81,44 @@ function ReservationList({
 
   const hasRoomFilter = typeof onRoomFilterChange === 'function' && Array.isArray(rooms) && rooms.length > 0;
 
-  const reservationsFilteredByRoom = useMemo(() => {
+  const statusOptionLabelByValue = useMemo(
+    () =>
+      RESERVATION_STATUS_OPTIONS.reduce((labels, option) => {
+        labels[option.value] = t(option.labelKey);
+        return labels;
+      }, {}),
+    [t],
+  );
+
+  const handleStatusFiltersChange = (event) => {
+    const value = event.target.value;
+    setStatusFilters(typeof value === 'string' ? value.split(',') : value);
+  };
+
+  const renderStatusFilterValue = (selected) => {
+    if (!selected.length) return t('reservationList.noStatuses');
+    if (selected.length === RESERVATION_STATUS_OPTIONS.length) {
+      return t('reservationList.allActiveStatuses');
+    }
+
+    return selected.map((status) => statusOptionLabelByValue[status] ?? status).join(', ');
+  };
+
+  const reservationsFilteredByStatus = useMemo(() => {
     if (!Array.isArray(reservations)) return [];
-    if (!hasRoomFilter || roomFilterId === 'all') return reservations;
     return reservations.filter((reservation) => {
+      if (isReservationPastForList(reservation)) return false;
+      return statusFilters.includes(getReservationFilterStatus(reservation));
+    });
+  }, [reservations, statusFilters]);
+
+  const reservationsFilteredByRoom = useMemo(() => {
+    if (!hasRoomFilter || roomFilterId === 'all') return reservationsFilteredByStatus;
+    return reservationsFilteredByStatus.filter((reservation) => {
       const reservationRoomId = reservation.room_id || reservation.room?.id;
       return reservationRoomId === roomFilterId;
     });
-  }, [reservations, roomFilterId, hasRoomFilter]);
+  }, [reservationsFilteredByStatus, roomFilterId, hasRoomFilter]);
 
   const sortedReservations = useMemo(() => {
     const items = [...reservationsFilteredByRoom];
@@ -208,6 +249,42 @@ function ReservationList({
               </Select>
             </FormControl>
           )}
+
+          <FormControl
+            size="small"
+            fullWidth
+            sx={{
+              minWidth: { xs: '100%', sm: 220 },
+              '& .MuiOutlinedInput-root': {
+                fontSize: { xs: '0.95rem', sm: '1rem' },
+                '& .MuiSelect-select': {
+                  py: { xs: 0.55, sm: 0.9 },
+                },
+              },
+              '& .MuiInputLabel-root': {
+                fontSize: { xs: '0.85rem', sm: '0.9rem' },
+              },
+            }}
+          >
+            <InputLabel id="reservation-status-filter-label">
+              {t('reservationList.filterByStatus')}
+            </InputLabel>
+            <Select
+              labelId="reservation-status-filter-label"
+              multiple
+              value={statusFilters}
+              label={t('reservationList.filterByStatus')}
+              onChange={handleStatusFiltersChange}
+              renderValue={renderStatusFilterValue}
+            >
+              {RESERVATION_STATUS_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  <Checkbox checked={statusFilters.includes(option.value)} size="small" />
+                  <ListItemText primary={t(option.labelKey)} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <FormControl
             size="small"

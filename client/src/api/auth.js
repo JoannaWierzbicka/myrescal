@@ -43,3 +43,11 @@ export async function logoutUser({ signal, token } = {}) {
     signal,
   });
 }
+
+export async function deleteAccount({ confirmation, signal } = {}) {
+  return apiClient(`${AUTH_ROOT}/account`, {
+    method: 'DELETE',
+    data: { confirmation },
+    signal,
+  });
+}
